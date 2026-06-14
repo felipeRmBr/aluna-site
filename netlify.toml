@@ -1,0 +1,16 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+  # WHATSAPP_PHONE is rendered to every client in wa.me links — it's not secret.
+  # Skip it in Netlify's secrets scanner so the build doesn't fail when the value
+  # appears in source (README, example placeholders).
+  SECRETS_SCAN_OMIT_KEYS = "WHATSAPP_PHONE"
+
+[[headers]]
+  for = "/_astro/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

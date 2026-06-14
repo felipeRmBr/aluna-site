@@ -49,7 +49,7 @@ cp .env.example .env
   - **Producción:** crea una base de datos en [turso.tech](https://turso.tech) (CLI: `turso db create aluna`, `turso db show aluna --url`). Pega esa URL aquí y un token en `TURSO_AUTH_TOKEN` (CLI: `turso db tokens create aluna`).
 - `ADMIN_PASSWORD`: contraseña que usarás en `/admin`.
 - `ADMIN_COOKIE_SECRET`: genera con `openssl rand -hex 32`. Si rota, todas las sesiones admin se invalidan.
-- `WHATSAPP_PHONE`: número con código de país, sólo dígitos (ej. `525555555555`).
+- `WHATSAPP_PHONE`: número con código de país, sólo dígitos, sin `+` (formato `5215XXXXXXXXXX`). Se renderiza en los enlaces `wa.me` que ven los clientes — no es un secreto.
 
 ### 2. Migraciones
 
