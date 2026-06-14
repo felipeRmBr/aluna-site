@@ -3,7 +3,7 @@ import { defineConfig } from 'astro/config';
 import netlify from '@astrojs/netlify';
 
 export default defineConfig({
-  site: 'https://aluna.example',
+  site: 'https://soy-aluna.com',
   output: 'static',
   adapter: netlify(),
   i18n: {
