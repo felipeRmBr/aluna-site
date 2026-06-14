@@ -1,0 +1,124 @@
+.hero {
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: var(--s-16) var(--s-4) var(--s-12);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-4);
+}
+
+.heroTitle {
+  font-family: var(--font-display);
+  letter-spacing: var(--tracking-display);
+  font-size: var(--fs-3xl);
+  line-height: 1;
+}
+
+.heroSub {
+  font-family: var(--font-display);
+  font-size: var(--fs-md);
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.eyebrow {
+  font-size: var(--fs-xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.heroCta {
+  margin-top: var(--s-4);
+  padding: var(--s-3) var(--s-6);
+  border-radius: var(--r-pill);
+  border: 1px solid var(--text);
+  font-size: var(--fs-xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  transition: background var(--dur) var(--easing), color var(--dur) var(--easing);
+}
+.heroCta:hover {
+  background: var(--text);
+  color: var(--bg-elev);
+}
+
+.section {
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: var(--s-8) var(--s-4);
+}
+
+.sectionHead {
+  text-align: center;
+  margin-bottom: var(--s-8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.sectionTitle {
+  font-family: var(--font-display);
+  letter-spacing: var(--tracking-display);
+  font-size: var(--fs-2xl);
+}
+
+.productGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--s-4);
+}
+@media (min-width: 768px) {
+  .productGrid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--s-6);
+  }
+}
+@media (min-width: 1024px) {
+  .productGrid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.colsGrid {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: var(--s-4);
+}
+@media (min-width: 768px) {
+  .colsGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--s-6);
+  }
+}
+@media (min-width: 1024px) {
+  .colsGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.colCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  text-align: center;
+}
+.colMedia {
+  aspect-ratio: 3 / 2;
+  border-radius: var(--r-lg);
+  background: var(--bg-muted);
+  overflow: hidden;
+}
+.colMedia img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.colName {
+  font-family: var(--font-display);
+  font-size: var(--fs-md);
+  letter-spacing: 0.06em;
+}

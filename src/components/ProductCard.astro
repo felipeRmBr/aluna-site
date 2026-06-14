@@ -1,0 +1,24 @@
+---
+import styles from './ProductCard.module.css';
+import { formatMXN } from '../lib/money';
+
+type Props = {
+  slug: string;
+  nombre: string;
+  precio: number;
+  imagen: string;
+  disponible?: boolean;
+};
+
+const { slug, nombre, precio, imagen, disponible = true } = Astro.props;
+---
+<a class={styles.card} href={`/productos/${slug}`}>
+  <div class={styles.media}>
+    <img class={styles.img} src={imagen} alt={nombre} loading="lazy" />
+    {!disponible && <span class={styles.soldOut}>Agotado</span>}
+  </div>
+  <div class={styles.body}>
+    <span class={styles.name}>{nombre}</span>
+    <span class={styles.price}>{formatMXN(precio)}</span>
+  </div>
+</a>

@@ -1,0 +1,58 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ProductCard from '../components/ProductCard.astro';
+import styles from '../styles/page.module.css';
+
+const productos = (await getCollection('productos')).sort((a, b) => a.data.orden - b.data.orden);
+const colecciones = (await getCollection('colecciones'))
+  .filter((c) => c.data.destacada)
+  .sort((a, b) => a.data.orden - b.data.orden);
+
+const destacados = productos.slice(0, 6);
+---
+<BaseLayout>
+  <section class={styles.hero}>
+    <p class={styles.eyebrow}>Lookbook 2026</p>
+    <h1 class={styles.heroTitle}>ALUNA</h1>
+    <p class={styles.heroSub}>Pequeños detalles, grandes espacios.</p>
+    <a class={styles.heroCta} href="/colecciones">Ver colecciones</a>
+  </section>
+
+  {colecciones.length > 0 && (
+    <section class={styles.section}>
+      <header class={styles.sectionHead}>
+        <p class={styles.eyebrow}>Colecciones</p>
+        <h2 class={styles.sectionTitle}>Destacadas</h2>
+      </header>
+      <div class={styles.colsGrid}>
+        {colecciones.map((c) => (
+          <a class={styles.colCard} href={`/colecciones/${c.id}`}>
+            <div class={styles.colMedia}>
+              {c.data.hero && <img src={c.data.hero} alt={c.data.nombre} loading="lazy" />}
+            </div>
+            <span class={styles.colName}>{c.data.nombre}</span>
+          </a>
+        ))}
+      </div>
+    </section>
+  )}
+
+  <section class={styles.section}>
+    <header class={styles.sectionHead}>
+      <p class={styles.eyebrow}>Productos</p>
+      <h2 class={styles.sectionTitle}>Esenciales</h2>
+    </header>
+    <div class={styles.productGrid}>
+      {destacados.map((p) => (
+        <ProductCard
+          slug={p.id}
+          nombre={p.data.nombre}
+          precio={p.data.precio}
+          imagen={p.data.imagenes[0]}
+          disponible={p.data.disponible}
+        />
+      ))}
+    </div>
+  </section>
+</BaseLayout>

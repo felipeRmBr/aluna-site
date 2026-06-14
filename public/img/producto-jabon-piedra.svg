@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 600">
+  <rect width="480" height="600" fill="#DCE8EA"/>
+  <ellipse cx="240" cy="430" rx="130" ry="22" fill="rgba(46,46,46,0.07)"/>
+  <path d="M 130 380 Q 110 310 170 280 Q 200 230 280 240 Q 360 250 370 320 Q 380 380 340 410 Q 280 440 200 430 Q 140 420 130 380 Z" fill="#C9C2B8"/>
+  <text x="240" y="345" text-anchor="middle" font-family="Didot, Bodoni, Georgia, serif" font-size="20" letter-spacing="5" fill="#5b554d">ALUNA</text>
+</svg>

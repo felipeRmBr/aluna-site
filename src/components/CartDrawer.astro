@@ -1,0 +1,221 @@
+---
+import styles from './CartDrawer.module.css';
+---
+<div class={styles.overlay} data-cart-overlay data-open="false"></div>
+<aside class={styles.drawer} data-cart-drawer data-open="false" aria-label="Carrito" aria-hidden="true">
+  <div class={styles.head}>
+    <span class={styles.title}>Carrito</span>
+    <button type="button" class={styles.close} data-cart-close aria-label="Cerrar carrito">×</button>
+  </div>
+
+  <div class={styles.body} data-cart-body>
+    <div class={styles.empty} data-cart-empty>
+      <p>Aún no has añadido productos.</p>
+    </div>
+    <ul class={styles.lines} data-cart-lines hidden></ul>
+  </div>
+
+  <div class={styles.foot} data-cart-foot hidden>
+    <div class={styles.totalRow}>
+      <span class={styles.totalLabel}>Total</span>
+      <span class={styles.totalAmount} data-cart-total>$0</span>
+    </div>
+    <button type="button" class={styles.checkout} data-cart-checkout>
+      Pedir por WhatsApp
+    </button>
+    <p class={styles.errorMsg} data-cart-error hidden></p>
+  </div>
+</aside>
+
+<script>
+  import { $cartLines, $cartTotal, setQty, removeFromCart, clearCart } from '../stores/cart';
+  import { formatMXN } from '../lib/money';
+
+  function setOpen(open: boolean) {
+    document.querySelectorAll<HTMLElement>('[data-cart-drawer], [data-cart-overlay]').forEach((el) => {
+      el.dataset.open = open ? 'true' : 'false';
+    });
+    document.querySelector<HTMLElement>('[data-cart-drawer]')?.setAttribute('aria-hidden', open ? 'false' : 'true');
+    document.body.style.overflow = open ? 'hidden' : '';
+  }
+
+  function render() {
+    const lines = $cartLines.get();
+    const total = $cartTotal.get();
+
+    const empty = document.querySelector<HTMLElement>('[data-cart-empty]');
+    const list = document.querySelector<HTMLUListElement>('[data-cart-lines]');
+    const foot = document.querySelector<HTMLElement>('[data-cart-foot]');
+    const totalEl = document.querySelector<HTMLElement>('[data-cart-total]');
+    if (!empty || !list || !foot || !totalEl) return;
+
+    if (lines.length === 0) {
+      empty.hidden = false;
+      list.hidden = true;
+      foot.hidden = true;
+      list.innerHTML = '';
+      return;
+    }
+
+    empty.hidden = true;
+    list.hidden = false;
+    foot.hidden = false;
+
+    list.innerHTML = lines
+      .map((l) => `
+        <li class="line">
+          <img class="thumb" src="${l.imagen ?? '/img/placeholder.svg'}" alt="" />
+          <div class="info">
+            <span class="name">${escapeHtml(l.nombre)}</span>
+            <span class="price">${formatMXN(l.precio)} c/u</span>
+            <button class="remove" data-remove="${l.slug}">Quitar</button>
+          </div>
+          <div class="qty">
+            <button class="qtyBtn" data-dec="${l.slug}" aria-label="Restar">−</button>
+            <span class="qtyN">${l.qty}</span>
+            <button class="qtyBtn" data-inc="${l.slug}" aria-label="Sumar">+</button>
+          </div>
+        </li>
+      `)
+      .join('');
+
+    totalEl.textContent = formatMXN(total);
+  }
+
+  function escapeHtml(s: string): string {
+    return s.replace(/[&<>"']/g, (c) =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!),
+    );
+  }
+
+  function bindStaticHandlers() {
+    document.addEventListener('aluna:cart-open', () => setOpen(true));
+
+    document.querySelector('[data-cart-close]')?.addEventListener('click', () => setOpen(false));
+    document.querySelector('[data-cart-overlay]')?.addEventListener('click', () => setOpen(false));
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') setOpen(false);
+    });
+
+    document.querySelector('[data-cart-body]')?.addEventListener('click', (e) => {
+      const t = e.target as HTMLElement;
+      const inc = t.getAttribute('data-inc');
+      const dec = t.getAttribute('data-dec');
+      const rm = t.getAttribute('data-remove');
+      if (inc) {
+        const line = $cartLines.get().find((l) => l.slug === inc);
+        if (line) setQty(inc, line.qty + 1);
+      } else if (dec) {
+        const line = $cartLines.get().find((l) => l.slug === dec);
+        if (line) setQty(dec, line.qty - 1);
+      } else if (rm) {
+        removeFromCart(rm);
+      }
+    });
+
+    document.querySelector('[data-cart-checkout]')?.addEventListener('click', checkout);
+  }
+
+  async function checkout() {
+    const btn = document.querySelector<HTMLButtonElement>('[data-cart-checkout]');
+    const err = document.querySelector<HTMLElement>('[data-cart-error]');
+    if (!btn || !err) return;
+    err.hidden = true;
+    btn.disabled = true;
+    btn.textContent = 'Creando pedido…';
+
+    try {
+      const lines = $cartLines.get();
+      const total = $cartTotal.get();
+      if (lines.length === 0) return;
+
+      const res = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          items: lines.map((l) => ({ slug: l.slug, nombre: l.nombre, precio: l.precio, qty: l.qty })),
+          total,
+        }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = (await res.json()) as { whatsappUrl: string; orderUrl: string };
+
+      clearCart();
+      window.location.href = data.whatsappUrl;
+    } catch (e) {
+      err.textContent = 'No pudimos crear el pedido. Intenta de nuevo.';
+      err.hidden = false;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Pedir por WhatsApp';
+    }
+  }
+
+  bindStaticHandlers();
+  $cartLines.subscribe(render);
+</script>
+
+<style>
+  .line {
+    display: grid;
+    grid-template-columns: 64px 1fr auto;
+    gap: var(--s-3);
+    align-items: center;
+  }
+  .thumb {
+    width: 64px;
+    height: 64px;
+    border-radius: var(--r-md);
+    background: var(--bg-muted);
+    object-fit: cover;
+  }
+  .info {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-1);
+    min-width: 0;
+  }
+  .name {
+    font-size: var(--fs-sm);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .price {
+    font-size: var(--fs-xs);
+    color: var(--text-muted);
+  }
+  .qty {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+  }
+  .qtyBtn {
+    width: 28px;
+    height: 28px;
+    border-radius: var(--r-pill);
+    border: 1px solid var(--line);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    line-height: 1;
+    background: transparent;
+    cursor: pointer;
+  }
+  .qtyBtn:hover { background: var(--bg-muted); }
+  .qtyN { min-width: 18px; text-align: center; font-size: var(--fs-sm); }
+  .remove {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-wide);
+    color: var(--text-muted);
+    background: transparent;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    text-align: left;
+  }
+  .remove:hover { color: var(--text); }
+</style>

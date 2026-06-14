@@ -1,0 +1,33 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { isAdmin, adminCookieName } from '../../lib/auth';
+import styles from './admin.module.css';
+
+export const prerender = false;
+
+const secret = import.meta.env.ADMIN_COOKIE_SECRET ?? '';
+const already = isAdmin(Astro.cookies.get(adminCookieName())?.value, secret);
+if (already) return Astro.redirect('/admin/pedidos');
+
+const error = Astro.url.searchParams.get('error');
+---
+<BaseLayout title="Admin — ALUNA" showChrome={false}>
+  <div class={styles.loginWrap}>
+    <form class={styles.loginCard} method="POST" action="/api/admin/login">
+      <h1 class={styles.loginTitle}>ALUNA · admin</h1>
+      <label class={styles.field}>
+        <span>Contraseña</span>
+        <input
+          class={styles.input}
+          type="password"
+          name="password"
+          autocomplete="current-password"
+          required
+          autofocus
+        />
+      </label>
+      {error && <p class={styles.errorMsg}>Contraseña incorrecta o demasiados intentos.</p>}
+      <button class={styles.submit} type="submit">Entrar</button>
+    </form>
+  </div>
+</BaseLayout>

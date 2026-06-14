@@ -1,0 +1,45 @@
+---
+import { getCollection, getEntry } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ProductCard from '../../components/ProductCard.astro';
+import styles from '../../styles/page.module.css';
+
+export async function getStaticPaths() {
+  const colecciones = await getCollection('colecciones');
+  return colecciones.map((c) => ({ params: { slug: c.id } }));
+}
+
+const { slug } = Astro.params;
+const coleccion = await getEntry('colecciones', slug!);
+if (!coleccion) return Astro.redirect('/404');
+
+const productos = (await getCollection('productos'))
+  .filter((p) => p.data.colecciones.includes(slug!))
+  .sort((a, b) => a.data.orden - b.data.orden);
+---
+<BaseLayout title={`${coleccion.data.nombre} — ALUNA`} description={coleccion.data.descripcion}>
+  <section class={styles.section}>
+    <header class={styles.sectionHead}>
+      <p class={styles.eyebrow}>Colección</p>
+      <h1 class={styles.sectionTitle}>{coleccion.data.nombre}</h1>
+      <p style="max-width: 600px; color: var(--text-muted); margin-top: var(--s-2)">
+        {coleccion.data.descripcion}
+      </p>
+    </header>
+    {productos.length === 0 ? (
+      <p style="text-align: center; color: var(--text-muted)">No hay productos en esta colección todavía.</p>
+    ) : (
+      <div class={styles.productGrid}>
+        {productos.map((p) => (
+          <ProductCard
+            slug={p.id}
+            nombre={p.data.nombre}
+            precio={p.data.precio}
+            imagen={p.data.imagenes[0]}
+            disponible={p.data.disponible}
+          />
+        ))}
+      </div>
+    )}
+  </section>
+</BaseLayout>

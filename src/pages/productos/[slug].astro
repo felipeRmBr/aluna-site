@@ -1,0 +1,85 @@
+---
+import { getCollection, getEntry } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { formatMXN } from '../../lib/money';
+import styles from './detail.module.css';
+
+export async function getStaticPaths() {
+  const productos = await getCollection('productos');
+  return productos.map((p) => ({ params: { slug: p.id } }));
+}
+
+const { slug } = Astro.params;
+const producto = await getEntry('productos', slug!);
+if (!producto) return Astro.redirect('/404');
+
+const colecciones = await Promise.all(
+  producto.data.colecciones.map((s) => getEntry('colecciones', s)),
+);
+const colsResueltas = colecciones.filter((c): c is NonNullable<typeof c> => Boolean(c));
+---
+<BaseLayout title={`${producto.data.nombre} — ALUNA`} description={producto.data.descripcionCorta}>
+  <article class={styles.wrap}>
+    <div class={styles.gallery}>
+      {producto.data.imagenes.map((src, i) => (
+        <img
+          class={styles.galleryImg}
+          src={src}
+          alt={`${producto.data.nombre} — vista ${i + 1}`}
+          loading={i === 0 ? 'eager' : 'lazy'}
+        />
+      ))}
+    </div>
+
+    <div class={styles.info}>
+      {colsResueltas.length > 0 && (
+        <p class={styles.crumbs}>
+          {colsResueltas.map((c, i) => {
+            const isLast = i === colsResueltas.length - 1;
+            return (
+              <Fragment>
+                <a href={`/colecciones/${c.id}`}>{c.data.nombre}</a>
+                {!isLast && <span> · </span>}
+              </Fragment>
+            );
+          })}
+        </p>
+      )}
+
+      <h1 class={styles.name}>{producto.data.nombre}</h1>
+      <p class={styles.price}>{formatMXN(producto.data.precio)}</p>
+      <p class={styles.desc}>{producto.data.descripcionCorta}</p>
+
+      <button
+        class={styles.addBtn}
+        type="button"
+        data-add-to-cart
+        data-slug={producto.id}
+        data-nombre={producto.data.nombre}
+        data-precio={producto.data.precio}
+        data-imagen={producto.data.imagenes[0]}
+        disabled={!producto.data.disponible}
+      >
+        {producto.data.disponible ? 'Añadir al carrito' : 'Agotado'}
+      </button>
+
+      {producto.data.sku && <p class={styles.sku}>SKU: {producto.data.sku}</p>}
+    </div>
+  </article>
+</BaseLayout>
+
+<script>
+  import { addToCart } from '../../stores/cart';
+
+  document.querySelectorAll<HTMLButtonElement>('[data-add-to-cart]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      addToCart({
+        slug: btn.dataset.slug!,
+        nombre: btn.dataset.nombre!,
+        precio: Number(btn.dataset.precio),
+        imagen: btn.dataset.imagen,
+      });
+      document.dispatchEvent(new CustomEvent('aluna:cart-open'));
+    });
+  });
+</script>

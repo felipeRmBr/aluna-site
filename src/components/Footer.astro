@@ -1,0 +1,11 @@
+---
+import styles from './Footer.module.css';
+const year = new Date().getFullYear();
+---
+<footer class={styles.footer}>
+  <div class={styles.inner}>
+    <p class={styles.tag}>ALUNA</p>
+    <p class={styles.copy}>Pequeños detalles, grandes espacios</p>
+    <p class={styles.copy}>© {year} ALUNA</p>
+  </div>
+</footer>

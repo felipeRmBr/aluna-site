@@ -1,0 +1,103 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getOrder, getStatusHistory } from '../../lib/orders';
+import { ORDER_STATE_LABELS, type OrderState } from '../../lib/db';
+import { formatMXN } from '../../lib/money';
+import styles from './order.module.css';
+
+export const prerender = false;
+
+const { id } = Astro.params;
+const order = id ? await getOrder(id) : null;
+
+if (!order) {
+  return new Response('Pedido no encontrado', { status: 404 });
+}
+
+const history = await getStatusHistory(id!);
+
+const formatDate = (iso: string) => {
+  try {
+    return new Intl.DateTimeFormat('es-MX', {
+      dateStyle: 'long',
+      timeStyle: 'short',
+    }).format(new Date(iso));
+  } catch {
+    return iso;
+  }
+};
+
+const orderedStates: OrderState[] = ['nuevo', 'confirmado', 'preparando', 'enviado', 'entregado'];
+const currentIdx = orderedStates.indexOf(order.estado as OrderState);
+const cancelled = order.estado === 'cancelado';
+
+const steps = orderedStates.map((state, i) => ({
+  state,
+  label: ORDER_STATE_LABELS[state],
+  reached: i <= currentIdx,
+  isCurrent: i === currentIdx,
+  event: history.find((h) => h.estado === state),
+}));
+---
+<BaseLayout title={`Pedido ${order.id} — ALUNA`}>
+  <article class={styles.wrap}>
+    <header class={styles.head}>
+      <p class={styles.eyebrow}>Pedido</p>
+      <h1 class={styles.id}>{order.id}</h1>
+      <p class={styles.placed}>Realizado el {formatDate(order.createdAt)}</p>
+    </header>
+
+    {cancelled ? (
+      <div class={styles.cancelled}>
+        <p>Este pedido fue cancelado.</p>
+      </div>
+    ) : (
+      <ol class={styles.timeline}>
+        {steps.map((s) => (
+          <li class:list={[styles.step, s.reached && styles.stepDone, s.isCurrent && styles.stepCurrent]}>
+            <span class={styles.stepDot} aria-hidden="true"></span>
+            <div class={styles.stepBody}>
+              <span class={styles.stepLabel}>{s.label}</span>
+              {s.event && <span class={styles.stepTime}>{formatDate(s.event.at)}</span>}
+            </div>
+          </li>
+        ))}
+      </ol>
+    )}
+
+    {order.nota && (
+      <section class={styles.note}>
+        <p class={styles.eyebrow}>Nota</p>
+        <p>{order.nota}</p>
+      </section>
+    )}
+
+    {order.tracking && (
+      <section class={styles.tracking}>
+        <p class={styles.eyebrow}>Guía de envío</p>
+        <p class={styles.trackingCode}>{order.tracking}</p>
+      </section>
+    )}
+
+    <section class={styles.items}>
+      <p class={styles.eyebrow}>Productos</p>
+      <ul class={styles.itemList}>
+        {order.items.map((item) => (
+          <li class={styles.item}>
+            <span class={styles.itemName}>{item.nombre}</span>
+            <span class={styles.itemQty}>×{item.qty}</span>
+            <span class={styles.itemPrice}>{formatMXN(item.precio * item.qty)}</span>
+          </li>
+        ))}
+      </ul>
+      <div class={styles.totalRow}>
+        <span class={styles.totalLabel}>Total</span>
+        <span class={styles.totalAmount}>{formatMXN(order.total)}</span>
+      </div>
+    </section>
+
+    <p class={styles.support}>
+      ¿Dudas sobre tu pedido? Escríbenos por WhatsApp.
+    </p>
+  </article>
+</BaseLayout>

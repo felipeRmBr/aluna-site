@@ -1,0 +1,105 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { getOrder, getStatusHistory } from '../../../lib/orders';
+import { formatMXN } from '../../../lib/money';
+import { ORDER_STATES, ORDER_STATE_LABELS } from '../../../lib/db';
+import styles from '../admin.module.css';
+
+export const prerender = false;
+
+const { id } = Astro.params;
+const order = id ? await getOrder(id) : null;
+if (!order) return new Response('No encontrado', { status: 404 });
+
+const history = await getStatusHistory(id!);
+
+const saved = Astro.url.searchParams.get('saved') === '1';
+
+const formatDate = (iso: string) =>
+  new Intl.DateTimeFormat('es-MX', { dateStyle: 'long', timeStyle: 'short' }).format(new Date(iso));
+
+const waLink = order.clienteTelefono
+  ? `https://wa.me/${order.clienteTelefono.replace(/[^\d]/g, '')}`
+  : null;
+---
+<BaseLayout title={`Pedido ${order.id} — admin`} showChrome={false}>
+  <div class={styles.detail}>
+    <a class={styles.back} href="/admin/pedidos">← Volver</a>
+
+    <div class={styles.detailHead}>
+      <p style="font-size: var(--fs-xs); letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--text-muted)">Pedido</p>
+      <h1 class={styles.detailId}>{order.id}</h1>
+      <p style="color: var(--text-muted); font-size: var(--fs-sm)">Realizado el {formatDate(order.createdAt)}</p>
+    </div>
+
+    {saved && <p class={styles.flash}>Cambios guardados.</p>}
+
+    <div class={styles.metaGrid}>
+      <div class={styles.metaItem}>
+        <span class={styles.metaLabel}>Cliente</span>
+        <span class={styles.metaValue}>{order.clienteNombre ?? '—'}</span>
+      </div>
+      <div class={styles.metaItem}>
+        <span class={styles.metaLabel}>Teléfono</span>
+        <span class={styles.metaValue}>
+          {order.clienteTelefono ?? '—'}
+          {waLink && <> · <a href={waLink} target="_blank" rel="noopener" style="text-decoration: underline">WhatsApp</a></>}
+        </span>
+      </div>
+      <div class={styles.metaItem}>
+        <span class={styles.metaLabel}>Total</span>
+        <span class={styles.metaValue}>{formatMXN(order.total)}</span>
+      </div>
+      <div class={styles.metaItem}>
+        <span class={styles.metaLabel}>Actualizado</span>
+        <span class={styles.metaValue}>{formatDate(order.updatedAt)}</span>
+      </div>
+    </div>
+
+    <form class={styles.editForm} method="POST" action={`/api/admin/orders/${order.id}`}>
+      <label class={styles.metaItem}>
+        <span class={styles.metaLabel}>Estado</span>
+        <select class={styles.select} name="estado">
+          {ORDER_STATES.map((s) => (
+            <option value={s} selected={s === order.estado}>{ORDER_STATE_LABELS[s]}</option>
+          ))}
+        </select>
+      </label>
+      <label class={styles.metaItem}>
+        <span class={styles.metaLabel}>Guía de envío (opcional)</span>
+        <input class={styles.textInput} type="text" name="tracking" value={order.tracking ?? ''} />
+      </label>
+      <label class={styles.metaItem}>
+        <span class={styles.metaLabel}>Nota para el cliente (opcional)</span>
+        <textarea class={styles.textarea} name="nota">{order.nota ?? ''}</textarea>
+      </label>
+      <button type="submit" class={styles.save}>Guardar</button>
+    </form>
+
+    <div class={styles.itemList}>
+      {order.items.map((item) => (
+        <div class={styles.itemRow}>
+          <span>{item.nombre}</span>
+          <span style="color: var(--text-muted)">×{item.qty}</span>
+          <span>{formatMXN(item.precio * item.qty)}</span>
+        </div>
+      ))}
+      <div class={styles.totalRow}>
+        <span class={styles.metaLabel}>Total</span>
+        <strong>{formatMXN(order.total)}</strong>
+      </div>
+    </div>
+
+    {history.length > 0 && (
+      <div class={styles.itemList}>
+        <span class={styles.metaLabel}>Historial</span>
+        {history.map((h) => (
+          <div style="display: flex; justify-content: space-between; font-size: var(--fs-sm); padding: var(--s-1) 0">
+            <span>{ORDER_STATE_LABELS[h.estado] ?? h.estado}</span>
+            <span style="color: var(--text-muted)">{formatDate(h.at)}</span>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+</BaseLayout>

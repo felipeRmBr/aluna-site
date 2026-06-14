@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <g transform="translate(32 36) rotate(-30)">
+    <path fill="#BFA8DE" d="M 10 -22 a 22 22 0 1 0 0 44 a 16 22 0 1 1 0 -44 z"/>
+  </g>
+  <path fill="#BFA8DE" d="M 46 14 l 1.5 3.5 3.5 1.5 -3.5 1.5 -1.5 3.5 -1.5 -3.5 -3.5 -1.5 3.5 -1.5 z"/>
+</svg>

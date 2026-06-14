@@ -1,0 +1,47 @@
+---
+import Logo from './Logo.astro';
+import styles from './Header.module.css';
+
+const { pathname } = Astro.url;
+const isActive = (href: string) =>
+  href === '/' ? pathname === '/' : pathname.startsWith(href);
+---
+<header class={styles.header}>
+  <div class={styles.inner}>
+    <Logo />
+    <nav class={styles.nav} aria-label="Principal">
+      <a class:list={[styles.link, isActive('/colecciones') && styles.linkActive]} href="/colecciones">Colecciones</a>
+      <a class:list={[styles.link, isActive('/productos') && styles.linkActive]} href="/productos">Productos</a>
+    </nav>
+    <div class={styles.actions}>
+      <button type="button" class={styles.cartBtn} data-cart-open aria-label="Abrir carrito">
+        Carrito
+        <span class={styles.badge} data-cart-count data-empty="true">0</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<script>
+  import { $cartCount } from '../stores/cart';
+
+  function bind() {
+    const badge = document.querySelector<HTMLElement>('[data-cart-count]');
+    if (!badge) return;
+    $cartCount.subscribe((n) => {
+      badge.textContent = String(n);
+      badge.dataset.empty = n === 0 ? 'true' : 'false';
+    });
+
+    document.querySelectorAll<HTMLButtonElement>('[data-cart-open]').forEach((b) => {
+      b.addEventListener('click', () => {
+        document.dispatchEvent(new CustomEvent('aluna:cart-open'));
+      });
+    });
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bind);
+  } else {
+    bind();
+  }
+</script>

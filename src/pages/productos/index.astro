@@ -1,0 +1,27 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ProductCard from '../../components/ProductCard.astro';
+import styles from '../../styles/page.module.css';
+
+const productos = (await getCollection('productos')).sort((a, b) => a.data.orden - b.data.orden);
+---
+<BaseLayout title="Productos — ALUNA">
+  <section class={styles.section}>
+    <header class={styles.sectionHead}>
+      <p class={styles.eyebrow}>Catálogo</p>
+      <h1 class={styles.sectionTitle}>Todos los productos</h1>
+    </header>
+    <div class={styles.productGrid}>
+      {productos.map((p) => (
+        <ProductCard
+          slug={p.id}
+          nombre={p.data.nombre}
+          precio={p.data.precio}
+          imagen={p.data.imagenes[0]}
+          disponible={p.data.disponible}
+        />
+      ))}
+    </div>
+  </section>
+</BaseLayout>

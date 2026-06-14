@@ -1,0 +1,66 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { listOrders } from '../../../lib/orders';
+import { formatMXN } from '../../../lib/money';
+import { ORDER_STATE_LABELS } from '../../../lib/db';
+import styles from '../admin.module.css';
+
+export const prerender = false;
+
+const orders = await listOrders();
+
+const formatDate = (iso: string) =>
+  new Intl.DateTimeFormat('es-MX', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(iso));
+
+const badgeClass = (estado: string) => ({
+  nuevo: styles.badgeNuevo,
+  confirmado: styles.badgeConfirmado,
+  preparando: styles.badgePreparando,
+  enviado: styles.badgeEnviado,
+  entregado: styles.badgeEntregado,
+  cancelado: styles.badgeCancelado,
+}[estado] ?? '');
+---
+<BaseLayout title="Pedidos — admin" showChrome={false}>
+  <div class={styles.page}>
+    <div class={styles.pageHead}>
+      <h1 class={styles.pageTitle}>Pedidos</h1>
+      <form method="POST" action="/api/admin/logout">
+        <button class={styles.logout} type="submit">Salir</button>
+      </form>
+    </div>
+
+    {orders.length === 0 ? (
+      <p style="color: var(--text-muted); text-align: center; padding: var(--s-10)">
+        Aún no hay pedidos.
+      </p>
+    ) : (
+      <table class={styles.table}>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Fecha</th>
+            <th>Cliente</th>
+            <th>Total</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          {orders.map((o) => (
+            <tr onclick={`location.href='/admin/pedidos/${o.id}'`}>
+              <td class={styles.idCell}>{o.id}</td>
+              <td>{formatDate(o.createdAt)}</td>
+              <td>{o.clienteNombre ?? '—'}</td>
+              <td>{formatMXN(o.total)}</td>
+              <td>
+                <span class:list={[styles.badge, badgeClass(o.estado)]}>
+                  {ORDER_STATE_LABELS[o.estado]}
+                </span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )}
+  </div>
+</BaseLayout>
