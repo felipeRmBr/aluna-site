@@ -38,7 +38,16 @@ export const POST: APIRoute = async ({ params, request, redirect }) => {
   const ext = extForContentType(contentType);
   const key = `${slug}/${newKey()}.${ext}`;
   const buf = new Uint8Array(await file.arrayBuffer());
-  await putBlob({ key, data: buf, contentType });
+
+  try {
+    await putBlob({ key, data: buf, contentType });
+  } catch (err) {
+    console.error('[images/upload] putBlob failed:', err);
+    const msg = err instanceof Error ? err.message : 'storage-failed';
+    return wantJson
+      ? jsonError(`storage: ${msg}`, 500)
+      : redirect(`/admin/productos/${slug}?error=storage#imagenes`, 303);
+  }
 
   const url = imageUrlForKey(key);
   const id = await addImagen(slug, { url, blobKey: key });

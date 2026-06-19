@@ -27,7 +27,17 @@ function backend(): Backend {
     return _backend;
   }
   try {
-    const store = getStore({ name: STORE_NAME, consistency: 'strong' });
+    // Prefer explicit credentials when available. Without these the SDK
+    // falls back to the deploy-context token which is baked into the build
+    // and expires after a few hours — see the "Failed to decode token:
+    // Token expired" error class. Set NETLIFY_SITE_ID + NETLIFY_AUTH_TOKEN
+    // in the site's environment variables to use a long-lived PAT instead.
+    const siteID = process.env.NETLIFY_SITE_ID;
+    const token = process.env.NETLIFY_AUTH_TOKEN;
+    const store =
+      siteID && token
+        ? getStore({ name: STORE_NAME, siteID, token, consistency: 'strong' })
+        : getStore({ name: STORE_NAME, consistency: 'strong' });
     _backend = { kind: 'netlify', store };
   } catch {
     _backend = { kind: 'local', dir: join(process.cwd(), LOCAL_DIR) };

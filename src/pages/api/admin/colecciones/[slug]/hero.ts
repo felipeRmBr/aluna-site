@@ -38,7 +38,16 @@ export const POST: APIRoute = async ({ params, request, redirect }) => {
   const ext = extForContentType(contentType);
   const key = `colecciones/${slug}/${newKey()}.${ext}`;
   const buf = new Uint8Array(await file.arrayBuffer());
-  await putBlob({ key, data: buf, contentType });
+
+  try {
+    await putBlob({ key, data: buf, contentType });
+  } catch (err) {
+    console.error('[colecciones/hero] putBlob failed:', err);
+    const msg = err instanceof Error ? err.message : 'storage-failed';
+    return wantJson
+      ? jsonError(`storage: ${msg}`, 500)
+      : redirect(`/admin/colecciones/${slug}?error=storage`, 303);
+  }
 
   const url = imageUrlForKey(key);
   await updateColeccion(slug, { hero: url });
