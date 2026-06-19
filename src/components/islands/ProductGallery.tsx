@@ -34,6 +34,18 @@ export default function ProductGallery({ images, nombre }: Props) {
     };
   }, [lightbox, count]);
 
+  // Preload the other gallery images at the main-display size so clicking
+  // a thumbnail switches instantly. The browser caches the response; later
+  // assignments to the visible <img>'s src hit the cache without a network
+  // round trip.
+  useEffect(() => {
+    if (count <= 1 || typeof window === 'undefined') return;
+    for (const item of images) {
+      const preload = new window.Image();
+      preload.src = img(item.url, { w: 1200, fm: 'webp', q: 82 });
+    }
+  }, [images, count]);
+
   if (count === 0) return null;
   const current = images[active];
 
