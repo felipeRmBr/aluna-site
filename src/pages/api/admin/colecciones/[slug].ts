@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { z } from 'astro:content';
 import { getColeccion, updateColeccion } from '../../../../lib/colecciones';
+import { json, wantsJson } from '../../../../lib/admin-response';
 
 export const prerender = false;
 
@@ -38,5 +39,6 @@ export const POST: APIRoute = async ({ params, request, redirect }) => {
     destacada: parsed.data.destacada === 'on' || parsed.data.destacada === 'true',
   });
 
+  if (wantsJson(request)) return json({ ok: true });
   return redirect(`/admin/colecciones/${slug}?saved=1`, 303);
 };

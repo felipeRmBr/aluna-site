@@ -1,6 +1,7 @@
 ---
 import { marked } from 'marked';
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import ProductGallery from '../../components/islands/ProductGallery.tsx';
 import { formatMXN } from '../../lib/money';
 import { getProducto } from '../../lib/products';
 import { getColeccion } from '../../lib/colecciones';
@@ -19,19 +20,15 @@ const colsResueltas = (
 const descripcionHtml = producto.descripcionMd
   ? marked.parse(producto.descripcionMd, { async: false })
   : null;
+
+const galleryImages = producto.imagenes.map((img, i) => ({
+  url: img.url,
+  alt: `${producto.nombre} — vista ${i + 1}`,
+}));
 ---
 <BaseLayout title={`${producto.nombre} — ALUNA`} description={producto.descripcionCorta}>
   <article class={styles.wrap}>
-    <div class={styles.gallery}>
-      {producto.imagenes.map((img, i) => (
-        <img
-          class={styles.galleryImg}
-          src={img.url}
-          alt={`${producto.nombre} — vista ${i + 1}`}
-          loading={i === 0 ? 'eager' : 'lazy'}
-        />
-      ))}
-    </div>
+    <ProductGallery client:load images={galleryImages} nombre={producto.nombre} />
 
     <div class={styles.info}>
       {colsResueltas.length > 0 && (

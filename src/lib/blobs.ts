@@ -1,7 +1,7 @@
 import { getStore } from '@netlify/blobs';
 import { mkdir, readFile, writeFile, unlink } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 
 /**
  * Wraps Netlify Blobs for the product-images store, with a local-filesystem
@@ -20,6 +20,12 @@ let _backend: Backend | null = null;
 
 function backend(): Backend {
   if (_backend) return _backend;
+  // In dev, Netlify's Vite emulator stores blobs in memory and wipes them
+  // on restart. Force the on-disk fallback so uploads persist across reloads.
+  if (import.meta.env.DEV) {
+    _backend = { kind: 'local', dir: join(process.cwd(), LOCAL_DIR) };
+    return _backend;
+  }
   try {
     const store = getStore({ name: STORE_NAME, consistency: 'strong' });
     _backend = { kind: 'netlify', store };
@@ -42,9 +48,10 @@ export async function putBlob({ key, data, contentType }: PutInput): Promise<voi
     await b.store.set(key, buf, { metadata: { contentType } });
     return;
   }
-  if (!existsSync(b.dir)) await mkdir(b.dir, { recursive: true });
-  await writeFile(join(b.dir, key), buf);
-  await writeFile(join(b.dir, `${key}.meta.json`), JSON.stringify({ contentType }));
+  const filePath = join(b.dir, key);
+  await mkdir(dirname(filePath), { recursive: true });
+  await writeFile(filePath, buf);
+  await writeFile(`${filePath}.meta.json`, JSON.stringify({ contentType }));
 }
 
 export type BlobResult = {

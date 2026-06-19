@@ -7,6 +7,7 @@ import {
   isAllowedImageType,
   extForContentType,
 } from '../../../../../lib/blobs';
+import { json, jsonError, wantsJson } from '../../../../../lib/admin-response';
 
 export const prerender = false;
 
@@ -20,26 +21,28 @@ export const POST: APIRoute = async ({ params, request, redirect }) => {
   const existing = await getProducto(slug);
   if (!existing) return new Response('Not found', { status: 404 });
 
+  const wantJson = wantsJson(request);
+  const fail = (code: string) =>
+    wantJson
+      ? jsonError(code, 400)
+      : redirect(`/admin/productos/${slug}?error=${code}#imagenes`, 303);
+
   const form = await request.formData();
   const file = form.get('imagen');
-  if (!(file instanceof File)) {
-    return redirect(`/admin/productos/${slug}?error=no-file`, 303);
-  }
+  if (!(file instanceof File)) return fail('no-file');
 
   const contentType = file.type || 'application/octet-stream';
-  if (!isAllowedImageType(contentType)) {
-    return redirect(`/admin/productos/${slug}?error=bad-type`, 303);
-  }
-  if (file.size > MAX_BYTES) {
-    return redirect(`/admin/productos/${slug}?error=too-big`, 303);
-  }
+  if (!isAllowedImageType(contentType)) return fail('bad-type');
+  if (file.size > MAX_BYTES) return fail('too-big');
 
   const ext = extForContentType(contentType);
   const key = `${slug}/${newKey()}.${ext}`;
   const buf = new Uint8Array(await file.arrayBuffer());
   await putBlob({ key, data: buf, contentType });
 
-  await addImagen(slug, { url: imageUrlForKey(key), blobKey: key });
+  const url = imageUrlForKey(key);
+  const id = await addImagen(slug, { url, blobKey: key });
 
-  return redirect(`/admin/productos/${slug}?saved=1`, 303);
+  if (wantJson) return json({ ok: true, image: { id, url, blobKey: key } });
+  return redirect(`/admin/productos/${slug}?saved=1#imagenes`, 303);
 };

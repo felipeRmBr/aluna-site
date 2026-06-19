@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { reorderImagenes } from '../../../../../../lib/products';
+import { json, wantsJson } from '../../../../../../lib/admin-response';
 
 export const prerender = false;
 
@@ -17,5 +18,7 @@ export const POST: APIRoute = async ({ params, request, redirect }) => {
   if (ids.length === 0) return new Response('Bad request', { status: 400 });
 
   await reorderImagenes(slug, ids);
-  return redirect(`/admin/productos/${slug}?saved=1`, 303);
+
+  if (wantsJson(request)) return json({ ok: true });
+  return redirect(`/admin/productos/${slug}?saved=1#imagenes`, 303);
 };

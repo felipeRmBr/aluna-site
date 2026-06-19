@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { z } from 'astro:content';
 import { updateOrder } from '../../../../lib/orders';
 import { ORDER_STATES } from '../../../../lib/db';
+import { json, wantsJson } from '../../../../lib/admin-response';
 
 export const prerender = false;
 
@@ -31,5 +32,6 @@ export const POST: APIRoute = async ({ params, request, redirect }) => {
     tracking: tracking?.trim() ? tracking.trim() : null,
   });
 
+  if (wantsJson(request)) return json({ ok: true });
   return redirect(`/admin/pedidos/${id}?saved=1`);
 };
