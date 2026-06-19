@@ -45,7 +45,7 @@ export default function AdminProductEdit({ initial, allColecciones }: Props) {
 
   const [images, setImages] = useState<ImageItem[]>(initial.imagenes);
   const [savingForm, setSavingForm] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { toast, showSuccess, showError } = useToast();
@@ -88,15 +88,7 @@ export default function AdminProductEdit({ initial, allColecciones }: Props) {
     }
   }
 
-  async function onUpload(e: JSX.TargetedEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const input = fileInputRef.current;
-    const file = input?.files?.[0];
-    if (!file) {
-      showError('Selecciona una imagen.');
-      return;
-    }
-    setUploading(true);
+  async function uploadOne(file: File): Promise<ImageItem | { error: string }> {
     try {
       const optimized = await compressImage(file);
       const fd = new FormData();
@@ -110,22 +102,48 @@ export default function AdminProductEdit({ initial, allColecciones }: Props) {
         | { ok: true; image: ImageItem }
         | { ok: false; error?: string };
       if (!res.ok || !data.ok) {
-        const code = 'error' in data ? data.error : undefined;
-        showError(describeError(code));
-        return;
+        return { error: 'error' in data ? data.error ?? 'unknown' : 'unknown' };
       }
-      const newImg: ImageItem = {
-        id: data.image.id,
-        url: data.image.url,
-        orden: images.length,
-      };
-      setImages((prev) => [...prev, newImg]);
-      if (input) input.value = '';
-      showSuccess('Imagen subida.');
+      return { id: data.image.id, url: data.image.url, orden: 0 };
     } catch (err) {
-      showError(`No se pudo subir la imagen. ${(err as Error).message}`);
-    } finally {
-      setUploading(false);
+      return { error: (err as Error).message };
+    }
+  }
+
+  async function onUpload(e: JSX.TargetedEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const input = fileInputRef.current;
+    const files = Array.from(input?.files ?? []);
+    if (files.length === 0) {
+      showError('Selecciona al menos una imagen.');
+      return;
+    }
+
+    let succeeded = 0;
+    let failed = 0;
+    let lastError: string | undefined;
+
+    for (let i = 0; i < files.length; i++) {
+      setUploadProgress({ current: i + 1, total: files.length });
+      const result = await uploadOne(files[i]);
+      if ('error' in result) {
+        failed++;
+        lastError = result.error;
+      } else {
+        succeeded++;
+        setImages((prev) => [...prev, { ...result, orden: prev.length }]);
+      }
+    }
+
+    setUploadProgress(null);
+    if (input) input.value = '';
+
+    if (failed === 0) {
+      showSuccess(succeeded === 1 ? 'Imagen subida.' : `${succeeded} imágenes subidas.`);
+    } else if (succeeded === 0) {
+      showError(describeError(lastError));
+    } else {
+      showError(`${succeeded} subidas, ${failed} con error.`);
     }
   }
 
@@ -330,17 +348,22 @@ export default function AdminProductEdit({ initial, allColecciones }: Props) {
 
         <form class={styles.uploadField} onSubmit={onUpload}>
           <label class={styles.metaItem}>
-            <span class={styles.metaLabel}>Subir imagen</span>
+            <span class={styles.metaLabel}>Subir imágenes</span>
             <input
               ref={fileInputRef}
               type="file"
               accept="image/png,image/jpeg,image/webp,image/avif,image/gif,image/svg+xml"
+              multiple
               required
             />
-            <span class={styles.slugHint}>JPG, PNG, WebP, AVIF, GIF o SVG. Máx. 5 MB.</span>
+            <span class={styles.slugHint}>
+              Una o más imágenes. JPG, PNG, WebP, AVIF, GIF o SVG. Máx. 5 MB cada una.
+            </span>
           </label>
-          <button type="submit" class={styles.save} disabled={uploading}>
-            {uploading ? 'Subiendo…' : 'Subir'}
+          <button type="submit" class={styles.save} disabled={uploadProgress !== null}>
+            {uploadProgress
+              ? `Subiendo ${uploadProgress.current} de ${uploadProgress.total}…`
+              : 'Subir'}
           </button>
         </form>
       </div>
