@@ -7,6 +7,8 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   const requiresAdmin =
     path.startsWith('/admin/pedidos') ||
+    path.startsWith('/admin/productos') ||
+    path.startsWith('/admin/colecciones') ||
     (path.startsWith('/api/admin/') && !path.startsWith('/api/admin/login'));
 
   if (!requiresAdmin) return next();

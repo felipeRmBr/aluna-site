@@ -23,7 +23,7 @@ const isActive = (href: string) =>
 </header>
 
 <script>
-  import { $cartCount } from '../stores/cart';
+  import { $cartCount, openCart } from '../stores/cart';
 
   function bind() {
     const badge = document.querySelector<HTMLElement>('[data-cart-count]');
@@ -34,9 +34,7 @@ const isActive = (href: string) =>
     });
 
     document.querySelectorAll<HTMLButtonElement>('[data-cart-open]').forEach((b) => {
-      b.addEventListener('click', () => {
-        document.dispatchEvent(new CustomEvent('aluna:cart-open'));
-      });
+      b.addEventListener('click', () => openCart());
     });
   }
   if (document.readyState === 'loading') {

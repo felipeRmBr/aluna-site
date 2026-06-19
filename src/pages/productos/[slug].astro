@@ -1,31 +1,33 @@
 ---
-import { getCollection, getEntry } from 'astro:content';
+import { marked } from 'marked';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { formatMXN } from '../../lib/money';
+import { getProducto } from '../../lib/products';
+import { getColeccion } from '../../lib/colecciones';
 import styles from './detail.module.css';
 
-export async function getStaticPaths() {
-  const productos = await getCollection('productos');
-  return productos.map((p) => ({ params: { slug: p.id } }));
-}
+export const prerender = false;
 
 const { slug } = Astro.params;
-const producto = await getEntry('productos', slug!);
+const producto = slug ? await getProducto(slug) : null;
 if (!producto) return Astro.redirect('/404');
 
-const colecciones = await Promise.all(
-  producto.data.colecciones.map((s) => getEntry('colecciones', s)),
-);
-const colsResueltas = colecciones.filter((c): c is NonNullable<typeof c> => Boolean(c));
+const colsResueltas = (
+  await Promise.all(producto.colecciones.map((s) => getColeccion(s)))
+).filter((c): c is NonNullable<typeof c> => Boolean(c));
+
+const descripcionHtml = producto.descripcionMd
+  ? marked.parse(producto.descripcionMd, { async: false })
+  : null;
 ---
-<BaseLayout title={`${producto.data.nombre} — ALUNA`} description={producto.data.descripcionCorta}>
+<BaseLayout title={`${producto.nombre} — ALUNA`} description={producto.descripcionCorta}>
   <article class={styles.wrap}>
     <div class={styles.gallery}>
-      {producto.data.imagenes.map((src, i) => (
+      {producto.imagenes.map((img, i) => (
         <img
           class={styles.galleryImg}
-          src={src}
-          alt={`${producto.data.nombre} — vista ${i + 1}`}
+          src={img.url}
+          alt={`${producto.nombre} — vista ${i + 1}`}
           loading={i === 0 ? 'eager' : 'lazy'}
         />
       ))}
@@ -38,7 +40,7 @@ const colsResueltas = colecciones.filter((c): c is NonNullable<typeof c> => Bool
             const isLast = i === colsResueltas.length - 1;
             return (
               <Fragment>
-                <a href={`/colecciones/${c.id}`}>{c.data.nombre}</a>
+                <a href={`/colecciones/${c.slug}`}>{c.nombre}</a>
                 {!isLast && <span> · </span>}
               </Fragment>
             );
@@ -46,30 +48,34 @@ const colsResueltas = colecciones.filter((c): c is NonNullable<typeof c> => Bool
         </p>
       )}
 
-      <h1 class={styles.name}>{producto.data.nombre}</h1>
-      <p class={styles.price}>{formatMXN(producto.data.precio)}</p>
-      <p class={styles.desc}>{producto.data.descripcionCorta}</p>
+      <h1 class={styles.name}>{producto.nombre}</h1>
+      <p class={styles.price}>{formatMXN(producto.precio)}</p>
+      <p class={styles.desc}>{producto.descripcionCorta}</p>
+
+      {descripcionHtml && (
+        <div class={styles.body} set:html={descripcionHtml} />
+      )}
 
       <button
         class={styles.addBtn}
         type="button"
         data-add-to-cart
-        data-slug={producto.id}
-        data-nombre={producto.data.nombre}
-        data-precio={producto.data.precio}
-        data-imagen={producto.data.imagenes[0]}
-        disabled={!producto.data.disponible}
+        data-slug={producto.slug}
+        data-nombre={producto.nombre}
+        data-precio={producto.precio}
+        data-imagen={producto.imagenes[0]?.url ?? ''}
+        disabled={!producto.disponible}
       >
-        {producto.data.disponible ? 'Añadir al carrito' : 'Agotado'}
+        {producto.disponible ? 'Añadir al carrito' : 'Agotado'}
       </button>
 
-      {producto.data.sku && <p class={styles.sku}>SKU: {producto.data.sku}</p>}
+      {producto.sku && <p class={styles.sku}>SKU: {producto.sku}</p>}
     </div>
   </article>
 </BaseLayout>
 
 <script>
-  import { addToCart } from '../../stores/cart';
+  import { addToCart, openCart } from '../../stores/cart';
 
   document.querySelectorAll<HTMLButtonElement>('[data-add-to-cart]').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -79,7 +85,7 @@ const colsResueltas = colecciones.filter((c): c is NonNullable<typeof c> => Bool
         precio: Number(btn.dataset.precio),
         imagen: btn.dataset.imagen,
       });
-      document.dispatchEvent(new CustomEvent('aluna:cart-open'));
+      openCart();
     });
   });
 </script>

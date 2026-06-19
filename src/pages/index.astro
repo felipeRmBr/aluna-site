@@ -1,13 +1,14 @@
 ---
-import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import ProductCard from '../components/ProductCard.astro';
+import { listProductos } from '../lib/products';
+import { listColecciones } from '../lib/colecciones';
 import styles from '../styles/page.module.css';
 
-const productos = (await getCollection('productos')).sort((a, b) => a.data.orden - b.data.orden);
-const colecciones = (await getCollection('colecciones'))
-  .filter((c) => c.data.destacada)
-  .sort((a, b) => a.data.orden - b.data.orden);
+export const prerender = false;
+
+const productos = await listProductos();
+const colecciones = await listColecciones({ destacadasOnly: true });
 
 const destacados = productos.slice(0, 6);
 ---
@@ -27,11 +28,11 @@ const destacados = productos.slice(0, 6);
       </header>
       <div class={styles.colsGrid}>
         {colecciones.map((c) => (
-          <a class={styles.colCard} href={`/colecciones/${c.id}`}>
+          <a class={styles.colCard} href={`/colecciones/${c.slug}`}>
             <div class={styles.colMedia}>
-              {c.data.hero && <img src={c.data.hero} alt={c.data.nombre} loading="lazy" />}
+              {c.hero && <img src={c.hero} alt={c.nombre} loading="lazy" />}
             </div>
-            <span class={styles.colName}>{c.data.nombre}</span>
+            <span class={styles.colName}>{c.nombre}</span>
           </a>
         ))}
       </div>
@@ -46,11 +47,11 @@ const destacados = productos.slice(0, 6);
     <div class={styles.productGrid}>
       {destacados.map((p) => (
         <ProductCard
-          slug={p.id}
-          nombre={p.data.nombre}
-          precio={p.data.precio}
-          imagen={p.data.imagenes[0]}
-          disponible={p.data.disponible}
+          slug={p.slug}
+          nombre={p.nombre}
+          precio={p.precio}
+          imagen={p.imagenes[0]?.url ?? null}
+          disponible={p.disponible}
         />
       ))}
     </div>

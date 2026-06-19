@@ -1,9 +1,11 @@
 ---
-import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import { listColecciones } from '../../lib/colecciones';
 import styles from '../../styles/page.module.css';
 
-const colecciones = (await getCollection('colecciones')).sort((a, b) => a.data.orden - b.data.orden);
+export const prerender = false;
+
+const colecciones = await listColecciones();
 ---
 <BaseLayout title="Colecciones — ALUNA">
   <section class={styles.section}>
@@ -13,11 +15,11 @@ const colecciones = (await getCollection('colecciones')).sort((a, b) => a.data.o
     </header>
     <div class={styles.colsGrid}>
       {colecciones.map((c) => (
-        <a class={styles.colCard} href={`/colecciones/${c.id}`}>
+        <a class={styles.colCard} href={`/colecciones/${c.slug}`}>
           <div class={styles.colMedia}>
-            {c.data.hero && <img src={c.data.hero} alt={c.data.nombre} loading="lazy" />}
+            {c.hero && <img src={c.hero} alt={c.nombre} loading="lazy" />}
           </div>
-          <span class={styles.colName}>{c.data.nombre}</span>
+          <span class={styles.colName}>{c.nombre}</span>
         </a>
       ))}
     </div>

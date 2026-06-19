@@ -1,0 +1,61 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import AdminNav from '../../../components/AdminNav.astro';
+import { listColecciones } from '../../../lib/colecciones';
+import styles from '../admin.module.css';
+
+export const prerender = false;
+
+const colecciones = await listColecciones();
+---
+<BaseLayout title="Colecciones — admin" showChrome={false}>
+  <div class={styles.page}>
+    <AdminNav active="colecciones" />
+    <div class={styles.pageHead}>
+      <h1 class={styles.pageTitle}>Colecciones</h1>
+      <a class={styles.newBtn} href="/admin/colecciones/nueva">+ Nueva</a>
+    </div>
+
+    {colecciones.length === 0 ? (
+      <p style="color: var(--text-muted); text-align: center; padding: var(--s-10)">
+        Aún no hay colecciones. <a href="/admin/colecciones/nueva" style="text-decoration: underline">Crear la primera</a>.
+      </p>
+    ) : (
+      <table class={styles.table}>
+        <thead>
+          <tr>
+            <th class={styles.thumbCell}></th>
+            <th>Nombre</th>
+            <th>Descripción</th>
+            <th>Orden</th>
+            <th>Destacada</th>
+          </tr>
+        </thead>
+        <tbody>
+          {colecciones.map((c) => (
+            <tr onclick={`location.href='/admin/colecciones/${c.slug}'`}>
+              <td class={styles.thumbCell}>
+                {c.hero && <img class={styles.thumb} src={c.hero} alt={c.nombre} loading="lazy" />}
+              </td>
+              <td>
+                <a href={`/admin/colecciones/${c.slug}`} style="text-decoration: underline">{c.nombre}</a>
+                <div style="color: var(--text-muted); font-size: var(--fs-xs)">{c.slug}</div>
+              </td>
+              <td style="color: var(--text-muted); font-size: var(--fs-sm); max-width: 360px">
+                {c.descripcion}
+              </td>
+              <td>{c.orden}</td>
+              <td>
+                {c.destacada ? (
+                  <span class:list={[styles.badge, styles.badgeEntregado]}>Sí</span>
+                ) : (
+                  <span style="color: var(--text-muted); font-size: var(--fs-xs)">No</span>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )}
+  </div>
+</BaseLayout>

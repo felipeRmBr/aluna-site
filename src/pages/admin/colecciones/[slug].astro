@@ -1,0 +1,96 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import AdminNav from '../../../components/AdminNav.astro';
+import { getColeccion } from '../../../lib/colecciones';
+import styles from '../admin.module.css';
+
+export const prerender = false;
+
+const { slug } = Astro.params;
+const coleccion = slug ? await getColeccion(slug) : null;
+if (!coleccion) return new Response('No encontrado', { status: 404 });
+
+const saved = Astro.url.searchParams.get('saved') === '1';
+const error = Astro.url.searchParams.get('error');
+const errorMsg =
+  error === 'bad-type' ? 'Solo se permiten imágenes.' :
+  error === 'too-big' ? 'La imagen es demasiado grande (máx. 5 MB).' :
+  error === 'no-file' ? 'Selecciona una imagen.' :
+  null;
+---
+<BaseLayout title={`${coleccion.nombre} — admin`} showChrome={false}>
+  <div class={styles.page}>
+    <AdminNav active="colecciones" />
+    <a class={styles.back} href="/admin/colecciones">← Volver</a>
+    <div class={styles.pageHead}>
+      <h1 class={styles.pageTitle}>{coleccion.nombre}</h1>
+      <span style="color: var(--text-muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: var(--fs-sm)">/{coleccion.slug}</span>
+    </div>
+
+    {saved && <p class={styles.flash}>Cambios guardados.</p>}
+    {errorMsg && <p class:list={[styles.flash, styles.flashError]}>{errorMsg}</p>}
+
+    <form class={styles.editForm} method="POST" action={`/api/admin/colecciones/${coleccion.slug}`}>
+      <label class={styles.metaItem}>
+        <span class={styles.metaLabel}>Nombre</span>
+        <input class={styles.textInput} type="text" name="nombre" required maxlength="120" value={coleccion.nombre} />
+      </label>
+
+      <label class={styles.metaItem}>
+        <span class={styles.metaLabel}>Descripción corta</span>
+        <input class={styles.textInput} type="text" name="descripcion" required maxlength="500" value={coleccion.descripcion} />
+      </label>
+
+      <label class={styles.metaItem}>
+        <span class={styles.metaLabel}>Texto largo (markdown, opcional)</span>
+        <textarea class={styles.textarea} name="descripcionMd" maxlength="20000">{coleccion.descripcionMd ?? ''}</textarea>
+      </label>
+
+      <label class={styles.metaItem}>
+        <span class={styles.metaLabel}>Imagen hero (URL)</span>
+        <input class={styles.textInput} type="text" name="hero" maxlength="500" value={coleccion.hero ?? ''} />
+        <span class={styles.slugHint}>Edita este campo manualmente o usa el cargador abajo.</span>
+      </label>
+
+      <div class={styles.fieldRow}>
+        <label class={styles.metaItem}>
+          <span class={styles.metaLabel}>Orden</span>
+          <input class={styles.textInput} type="number" name="orden" step="1" value={coleccion.orden} />
+        </label>
+        <div class={styles.metaItem}>
+          <span class={styles.metaLabel}>Destacada</span>
+          <label class={styles.checkboxField}>
+            <input type="checkbox" name="destacada" value="on" checked={coleccion.destacada} />
+            <span>Mostrar en la portada</span>
+          </label>
+        </div>
+      </div>
+
+      <button type="submit" class={styles.save}>Guardar</button>
+    </form>
+
+    <div class={styles.sectionBox}>
+      <span class={styles.sectionTitleSm}>Imagen hero</span>
+
+      {coleccion.hero ? (
+        <img src={coleccion.hero} alt={coleccion.nombre} style="max-width: 360px; border-radius: var(--r-md); border: 1px solid var(--line)" />
+      ) : (
+        <p style="color: var(--text-muted); font-size: var(--fs-sm)">No hay imagen hero.</p>
+      )}
+
+      <form
+        class={styles.uploadField}
+        method="POST"
+        action={`/api/admin/colecciones/${coleccion.slug}/hero`}
+        enctype="multipart/form-data"
+      >
+        <label class={styles.metaItem}>
+          <span class={styles.metaLabel}>{coleccion.hero ? 'Reemplazar imagen' : 'Subir imagen'}</span>
+          <input type="file" name="hero" accept="image/png,image/jpeg,image/webp,image/avif,image/gif,image/svg+xml" required />
+          <span class={styles.slugHint}>JPG, PNG, WebP, AVIF, GIF o SVG. Máx. 5 MB.</span>
+        </label>
+        <button type="submit" class={styles.save}>Subir</button>
+      </form>
+    </div>
+  </div>
+</BaseLayout>

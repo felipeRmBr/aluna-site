@@ -1,0 +1,27 @@
+---
+import styles from '../pages/admin/admin.module.css';
+
+type Props = { active: 'pedidos' | 'productos' | 'colecciones' };
+const { active } = Astro.props;
+
+const links: { id: Props['active']; label: string; href: string }[] = [
+  { id: 'pedidos', label: 'Pedidos', href: '/admin/pedidos' },
+  { id: 'productos', label: 'Productos', href: '/admin/productos' },
+  { id: 'colecciones', label: 'Colecciones', href: '/admin/colecciones' },
+];
+---
+<nav class={styles.nav}>
+  <div class={styles.navLinks}>
+    {links.map((l) => (
+      <a
+        href={l.href}
+        class:list={[styles.navLink, active === l.id && styles.navLinkActive]}
+      >
+        {l.label}
+      </a>
+    ))}
+  </div>
+  <form method="POST" action="/api/admin/logout">
+    <button class={styles.logout} type="submit">Salir</button>
+  </form>
+</nav>
