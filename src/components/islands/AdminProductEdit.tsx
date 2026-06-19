@@ -4,6 +4,12 @@ import styles from '../../pages/admin/admin.module.css';
 import { useToast, ToastView, describeError } from './Toast';
 import { compressImage } from '../../lib/image-compress';
 
+function formatBytes(n: number): string {
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(0)} KB`;
+  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export type ImageItem = {
   id: number;
   url: string;
@@ -45,7 +51,8 @@ export default function AdminProductEdit({ initial, allColecciones }: Props) {
 
   const [images, setImages] = useState<ImageItem[]>(initial.imagenes);
   const [savingForm, setSavingForm] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null);
+  const [pending, setPending] = useState<Array<{ file: File; url: string }>>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { toast, showSuccess, showError } = useToast();
@@ -88,15 +95,28 @@ export default function AdminProductEdit({ initial, allColecciones }: Props) {
     }
   }
 
-  async function onUpload(e: JSX.TargetedEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const input = fileInputRef.current;
-    const file = input?.files?.[0];
-    if (!file) {
-      showError('Selecciona una imagen.');
-      return;
-    }
-    setUploading(true);
+  function onFilesPicked(e: JSX.TargetedEvent<HTMLInputElement>) {
+    const files = Array.from((e.target as HTMLInputElement).files ?? []);
+    // Revoke any previous object URLs to avoid leaks
+    pending.forEach((p) => URL.revokeObjectURL(p.url));
+    setPending(files.map((file) => ({ file, url: URL.createObjectURL(file) })));
+  }
+
+  function removePending(index: number) {
+    setPending((prev) => {
+      const removed = prev[index];
+      if (removed) URL.revokeObjectURL(removed.url);
+      return prev.filter((_, i) => i !== index);
+    });
+  }
+
+  function clearPending() {
+    pending.forEach((p) => URL.revokeObjectURL(p.url));
+    setPending([]);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }
+
+  async function uploadOne(file: File): Promise<ImageItem | { error: string }> {
     try {
       const optimized = await compressImage(file);
       const fd = new FormData();
@@ -110,22 +130,47 @@ export default function AdminProductEdit({ initial, allColecciones }: Props) {
         | { ok: true; image: ImageItem }
         | { ok: false; error?: string };
       if (!res.ok || !data.ok) {
-        const code = 'error' in data ? data.error : undefined;
-        showError(describeError(code));
-        return;
+        return { error: 'error' in data ? data.error ?? 'unknown' : 'unknown' };
       }
-      const newImg: ImageItem = {
-        id: data.image.id,
-        url: data.image.url,
-        orden: images.length,
-      };
-      setImages((prev) => [...prev, newImg]);
-      if (input) input.value = '';
-      showSuccess('Imagen subida.');
+      return { id: data.image.id, url: data.image.url, orden: 0 };
     } catch (err) {
-      showError(`No se pudo subir la imagen. ${(err as Error).message}`);
-    } finally {
-      setUploading(false);
+      return { error: (err as Error).message };
+    }
+  }
+
+  async function onUpload(e: JSX.TargetedEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (pending.length === 0) {
+      showError('Selecciona al menos una imagen.');
+      return;
+    }
+
+    const queue = pending.slice();
+    let succeeded = 0;
+    let failed = 0;
+    let lastError: string | undefined;
+
+    for (let i = 0; i < queue.length; i++) {
+      setUploadProgress({ current: i + 1, total: queue.length });
+      const result = await uploadOne(queue[i].file);
+      if ('error' in result) {
+        failed++;
+        lastError = result.error;
+      } else {
+        succeeded++;
+        setImages((prev) => [...prev, { ...result, orden: prev.length }]);
+      }
+    }
+
+    setUploadProgress(null);
+    clearPending();
+
+    if (failed === 0) {
+      showSuccess(succeeded === 1 ? 'Imagen subida.' : `${succeeded} imágenes subidas.`);
+    } else if (succeeded === 0) {
+      showError(describeError(lastError));
+    } else {
+      showError(`${succeeded} subidas, ${failed} con error.`);
     }
   }
 
@@ -330,18 +375,60 @@ export default function AdminProductEdit({ initial, allColecciones }: Props) {
 
         <form class={styles.uploadField} onSubmit={onUpload}>
           <label class={styles.metaItem}>
-            <span class={styles.metaLabel}>Subir imagen</span>
+            <span class={styles.metaLabel}>Subir imágenes</span>
             <input
               ref={fileInputRef}
               type="file"
               accept="image/png,image/jpeg,image/webp,image/avif,image/gif,image/svg+xml"
-              required
+              multiple
+              onChange={onFilesPicked}
             />
-            <span class={styles.slugHint}>JPG, PNG, WebP, AVIF, GIF o SVG. Máx. 5 MB.</span>
+            <span class={styles.slugHint}>
+              Una o más imágenes. JPG, PNG, WebP, AVIF, GIF o SVG. Máx. 5 MB cada una.
+            </span>
           </label>
-          <button type="submit" class={styles.save} disabled={uploading}>
-            {uploading ? 'Subiendo…' : 'Subir'}
-          </button>
+
+          {pending.length > 0 && (
+            <div class={styles.imagesGrid}>
+              {pending.map((p, i) => (
+                <div key={p.url} class={styles.imageCard}>
+                  <img src={p.url} alt={p.file.name} />
+                  <div class={styles.imageCardActions}>
+                    <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)' }}>
+                      {formatBytes(p.file.size)}
+                    </span>
+                    <button
+                      type="button"
+                      class={`${styles.iconBtn} ${styles.iconBtnDanger}`}
+                      onClick={() => removePending(i)}
+                      disabled={uploadProgress !== null}
+                    >
+                      Quitar
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: 'var(--s-3)', justifyContent: 'flex-end', alignItems: 'center' }}>
+            {pending.length > 0 && uploadProgress === null && (
+              <button type="button" class={styles.iconBtn} onClick={clearPending}>
+                Limpiar
+              </button>
+            )}
+            <button
+              type="submit"
+              class={styles.save}
+              disabled={pending.length === 0 || uploadProgress !== null}
+            >
+              {uploadProgress
+                ? `Subiendo ${uploadProgress.current} de ${uploadProgress.total}…`
+                : pending.length > 1
+                  ? `Subir ${pending.length} imágenes`
+                  : 'Subir'}
+            </button>
+          </div>
         </form>
       </div>
     </>
