@@ -2,6 +2,7 @@ import { useRef, useState } from 'preact/hooks';
 import type { JSX } from 'preact';
 import styles from '../../pages/admin/admin.module.css';
 import { useToast, ToastView, describeError } from './Toast';
+import { compressImage } from '../../lib/image-compress';
 
 export type ImageItem = {
   id: number;
@@ -97,8 +98,9 @@ export default function AdminProductEdit({ initial, allColecciones }: Props) {
     }
     setUploading(true);
     try {
+      const optimized = await compressImage(file);
       const fd = new FormData();
-      fd.set('imagen', file);
+      fd.set('imagen', optimized);
       const res = await fetch(`/api/admin/products/${initial.slug}/images`, {
         method: 'POST',
         headers: { Accept: 'application/json' },

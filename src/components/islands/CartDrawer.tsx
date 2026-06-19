@@ -10,6 +10,7 @@ import {
   setQty,
 } from '../../stores/cart';
 import { formatMXN } from '../../lib/money';
+import { img } from '../../lib/img';
 import styles from '../CartDrawer.module.css';
 
 export default function CartDrawer() {
@@ -98,7 +99,7 @@ export default function CartDrawer() {
                 <li key={l.slug} class={styles.line}>
                   <img
                     class={styles.thumb}
-                    src={l.imagen ?? '/img/placeholder.svg'}
+                    src={img(l.imagen ?? '/img/placeholder.svg', { w: 160, fit: 'cover', fm: 'webp', q: 78 })}
                     alt=""
                   />
                   <div class={styles.info}>

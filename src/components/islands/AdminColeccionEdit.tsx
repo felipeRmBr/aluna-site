@@ -2,6 +2,7 @@ import { useRef, useState } from 'preact/hooks';
 import type { JSX } from 'preact';
 import styles from '../../pages/admin/admin.module.css';
 import { useToast, ToastView, describeError } from './Toast';
+import { compressImage } from '../../lib/image-compress';
 
 export type AdminColeccionInitial = {
   slug: string;
@@ -66,8 +67,9 @@ export default function AdminColeccionEdit({ initial }: Props) {
     }
     setUploading(true);
     try {
+      const optimized = await compressImage(file);
       const fd = new FormData();
-      fd.set('hero', file);
+      fd.set('hero', optimized);
       const res = await fetch(`/api/admin/colecciones/${initial.slug}/hero`, {
         method: 'POST',
         headers: { Accept: 'application/json' },
