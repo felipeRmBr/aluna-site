@@ -1,6 +1,7 @@
 ---
 import styles from './ProductCard.module.css';
 import { formatMXN } from '../lib/money';
+import { img } from '../lib/img';
 
 type Props = {
   slug: string;
@@ -11,10 +12,11 @@ type Props = {
 };
 
 const { slug, nombre, precio, imagen, disponible = true } = Astro.props;
+const src = imagen ? img(imagen, { w: 600, fit: 'cover', fm: 'webp', q: 80 }) : null;
 ---
 <a class={styles.card} href={`/productos/${slug}`}>
   <div class={styles.media}>
-    {imagen && <img class={styles.img} src={imagen} alt={nombre} loading="lazy" />}
+    {src && <img class={styles.img} src={src} alt={nombre} loading="lazy" />}
     {!disponible && <span class={styles.soldOut}>Agotado</span>}
   </div>
   <div class={styles.body}>

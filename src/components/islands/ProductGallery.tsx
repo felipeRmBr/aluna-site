@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'preact/hooks';
 import styles from '../ProductGallery.module.css';
+import { img } from '../../lib/img';
 
 export type GalleryImage = {
   url: string;
@@ -46,7 +47,7 @@ export default function ProductGallery({ images, nombre }: Props) {
       >
         <img
           class={styles.mainImg}
-          src={current.url}
+          src={img(current.url, { w: 1200, fit: 'cover', fm: 'webp', q: 82 })}
           alt={current.alt}
           loading="eager"
         />
@@ -55,7 +56,7 @@ export default function ProductGallery({ images, nombre }: Props) {
 
       {hasMany && (
         <div class={styles.thumbs} role="tablist" aria-label="Galería">
-          {images.map((img, i) => (
+          {images.map((thumb, i) => (
             <button
               key={i}
               type="button"
@@ -65,7 +66,7 @@ export default function ProductGallery({ images, nombre }: Props) {
               aria-selected={i === active}
               aria-label={`Ver imagen ${i + 1}`}
             >
-              <img src={img.url} alt="" loading="lazy" />
+              <img src={img(thumb.url, { w: 200, fit: 'cover', fm: 'webp', q: 75 })} alt="" loading="lazy" />
             </button>
           ))}
         </div>
@@ -100,7 +101,7 @@ export default function ProductGallery({ images, nombre }: Props) {
 
           <img
             class={styles.lightboxImg}
-            src={current.url}
+            src={img(current.url, { w: 2000, fit: 'contain', fm: 'webp', q: 85 })}
             alt={current.alt}
             onClick={(e) => e.stopPropagation()}
           />

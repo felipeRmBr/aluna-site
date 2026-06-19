@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { listColecciones } from '../../lib/colecciones';
+import { img } from '../../lib/img';
 import styles from '../../styles/page.module.css';
 
 export const prerender = false;
@@ -17,7 +18,7 @@ const colecciones = await listColecciones();
       {colecciones.map((c) => (
         <a class={styles.colCard} href={`/colecciones/${c.slug}`}>
           <div class={styles.colMedia}>
-            {c.hero && <img src={c.hero} alt={c.nombre} loading="lazy" />}
+            {c.hero && <img src={img(c.hero, { w: 800, fit: 'cover', fm: 'webp', q: 80 })} alt={c.nombre} loading="lazy" />}
           </div>
           <span class={styles.colName}>{c.nombre}</span>
         </a>
