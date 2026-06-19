@@ -78,7 +78,7 @@ export default function ProductGallery({ images, nombre }: Props) {
               aria-selected={i === active}
               aria-label={`Ver imagen ${i + 1}`}
             >
-              <img src={img(thumb.url, { w: 200, fm: 'webp', q: 75 })} alt="" loading="lazy" />
+              <img src={img(thumb.url, { w: 200, h: 200, fit: 'cover', fm: 'webp', q: 75 })} alt="" loading="lazy" />
             </button>
           ))}
         </div>
