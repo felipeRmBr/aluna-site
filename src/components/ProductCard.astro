@@ -6,7 +6,7 @@ type Props = {
   slug: string;
   nombre: string;
   precio: number;
-  imagen: string;
+  imagen: string | null | undefined;
   disponible?: boolean;
 };
 
@@ -14,7 +14,7 @@ const { slug, nombre, precio, imagen, disponible = true } = Astro.props;
 ---
 <a class={styles.card} href={`/productos/${slug}`}>
   <div class={styles.media}>
-    <img class={styles.img} src={imagen} alt={nombre} loading="lazy" />
+    {imagen && <img class={styles.img} src={imagen} alt={nombre} loading="lazy" />}
     {!disponible && <span class={styles.soldOut}>Agotado</span>}
   </div>
   <div class={styles.body}>

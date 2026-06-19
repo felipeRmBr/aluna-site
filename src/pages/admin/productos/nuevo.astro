@@ -1,0 +1,162 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import AdminNav from '../../../components/AdminNav.astro';
+import { listColecciones } from '../../../lib/colecciones';
+import styles from '../admin.module.css';
+
+export const prerender = false;
+
+const colecciones = await listColecciones();
+const error = Astro.url.searchParams.get('error');
+const errorMsg =
+  error === 'slug-taken' ? 'Ya existe un producto con ese identificador.' :
+  error === 'slug-invalid' ? 'El identificador no es válido (usa solo letras, números y guiones).' :
+  null;
+---
+<BaseLayout title="Nuevo producto — admin" showChrome={false}>
+  <div class={styles.page}>
+    <AdminNav active="productos" />
+    <a class={styles.back} href="/admin/productos">← Volver</a>
+    <div class={styles.pageHead}>
+      <h1 class={styles.pageTitle}>Nuevo producto</h1>
+    </div>
+
+    {errorMsg && <p class:list={[styles.flash, styles.flashError]}>{errorMsg}</p>}
+
+    <form class={styles.editForm} method="POST" action="/api/admin/products">
+      <div class={styles.fieldRow}>
+        <label class={styles.metaItem}>
+          <span class={styles.metaLabel}>Nombre</span>
+          <input
+            class={styles.textInput}
+            type="text"
+            name="nombre"
+            id="nombre"
+            required
+            maxlength="120"
+            autofocus
+          />
+        </label>
+        <label class={styles.metaItem}>
+          <span class={styles.metaLabel}>Identificador (URL)</span>
+          <div class={styles.slugInputGroup}>
+            <input
+              class={styles.textInput}
+              type="text"
+              name="slug"
+              id="slug"
+              required
+              pattern="[a-z0-9][a-z0-9\-]*[a-z0-9]"
+              minlength="2"
+              maxlength="60"
+            />
+          </div>
+          <span class={styles.slugHint}>/productos/<span id="slug-preview">…</span></span>
+        </label>
+      </div>
+
+      <div class={styles.fieldRow}>
+        <label class={styles.metaItem}>
+          <span class={styles.metaLabel}>Precio (MXN)</span>
+          <input class={styles.textInput} type="number" name="precio" required min="0" step="1" />
+        </label>
+        <label class={styles.metaItem}>
+          <span class={styles.metaLabel}>SKU (opcional)</span>
+          <input class={styles.textInput} type="text" name="sku" maxlength="60" />
+        </label>
+      </div>
+
+      <label class={styles.metaItem}>
+        <span class={styles.metaLabel}>Descripción corta</span>
+        <input class={styles.textInput} type="text" name="descripcionCorta" required maxlength="500" />
+      </label>
+
+      <label class={styles.metaItem}>
+        <span class={styles.metaLabel}>Descripción larga (markdown)</span>
+        <textarea
+          class={styles.textarea}
+          name="descripcionMd"
+          maxlength="20000"
+          placeholder="Compatible con markdown. Listas con `- `, **negritas**, etc."
+        ></textarea>
+      </label>
+
+      <div class={styles.fieldRow}>
+        <label class={styles.metaItem}>
+          <span class={styles.metaLabel}>Orden de aparición</span>
+          <input class={styles.textInput} type="number" name="orden" value="0" step="1" />
+        </label>
+        <div class={styles.metaItem}>
+          <span class={styles.metaLabel}>Visibilidad</span>
+          <label class={styles.checkboxField}>
+            <input type="checkbox" name="disponible" value="true" checked />
+            <span>Disponible en el catálogo</span>
+          </label>
+        </div>
+      </div>
+
+      <fieldset class={styles.metaItem} style="border: 0; padding: 0; margin: 0">
+        <legend class={styles.metaLabel}>Colecciones</legend>
+        <div style="display: flex; gap: var(--s-3); flex-wrap: wrap; padding-top: var(--s-2)">
+          {colecciones.length === 0 ? (
+            <span style="color: var(--text-muted); font-size: var(--fs-sm)">
+              Aún no hay colecciones. <a href="/admin/colecciones/nueva" style="text-decoration: underline">Crear una</a>.
+            </span>
+          ) : (
+            colecciones.map((c) => (
+              <label class={styles.checkboxField}>
+                <input type="checkbox" name="coleccion" value={c.slug} />
+                <span>{c.nombre}</span>
+              </label>
+            ))
+          )}
+        </div>
+        <input type="hidden" name="colecciones" id="colecciones-csv" value="" />
+      </fieldset>
+
+      <p style="color: var(--text-muted); font-size: var(--fs-xs)">
+        Las imágenes se cargan después de crear el producto.
+      </p>
+      <button type="submit" class={styles.save}>Crear producto</button>
+    </form>
+  </div>
+</BaseLayout>
+
+<script>
+  function slugify(s: string): string {
+    return s
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 60);
+  }
+
+  const nombre = document.getElementById('nombre') as HTMLInputElement | null;
+  const slug = document.getElementById('slug') as HTMLInputElement | null;
+  const slugPreview = document.getElementById('slug-preview');
+  const colCsv = document.getElementById('colecciones-csv') as HTMLInputElement | null;
+  let slugTouched = false;
+
+  if (slug) slug.addEventListener('input', () => { slugTouched = true; });
+  if (nombre && slug) {
+    nombre.addEventListener('input', () => {
+      if (!slugTouched) slug.value = slugify(nombre.value);
+      if (slugPreview) slugPreview.textContent = slug.value || '…';
+    });
+  }
+  if (slug && slugPreview) {
+    slug.addEventListener('input', () => {
+      slugPreview.textContent = slug.value || '…';
+    });
+  }
+
+  const form = document.querySelector('form');
+  form?.addEventListener('submit', () => {
+    const checked = Array.from(
+      document.querySelectorAll<HTMLInputElement>('input[name="coleccion"]:checked'),
+    ).map((el) => el.value);
+    if (colCsv) colCsv.value = checked.join(',');
+  });
+</script>

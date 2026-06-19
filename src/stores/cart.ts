@@ -1,5 +1,5 @@
 import { persistentMap } from '@nanostores/persistent';
-import { computed } from 'nanostores';
+import { atom, computed } from 'nanostores';
 
 export type CartLine = {
   slug: string;
@@ -62,3 +62,13 @@ export const $cartCount = computed($cart, (cart) =>
 export const $cartTotal = computed($cart, (cart) =>
   Object.values(cart).reduce((sum, l) => sum + l.precio * l.qty, 0),
 );
+
+export const $cartOpen = atom(false);
+
+export function openCart() {
+  $cartOpen.set(true);
+}
+
+export function closeCart() {
+  $cartOpen.set(false);
+}

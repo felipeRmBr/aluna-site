@@ -1,0 +1,196 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import AdminNav from '../../../components/AdminNav.astro';
+import { getProducto } from '../../../lib/products';
+import { listColecciones } from '../../../lib/colecciones';
+import styles from '../admin.module.css';
+
+export const prerender = false;
+
+const { slug } = Astro.params;
+const producto = slug ? await getProducto(slug) : null;
+if (!producto) return new Response('No encontrado', { status: 404 });
+
+const allColecciones = await listColecciones();
+const productoCols = new Set(producto.colecciones);
+
+const saved = Astro.url.searchParams.get('saved') === '1';
+const error = Astro.url.searchParams.get('error');
+const errorMsg =
+  error === 'bad-type' ? 'Solo se permiten imágenes (JPG, PNG, WebP, AVIF, GIF, SVG).' :
+  error === 'too-big' ? 'La imagen es demasiado grande (máx. 5 MB).' :
+  error === 'no-file' ? 'Selecciona una imagen antes de subir.' :
+  null;
+---
+<BaseLayout title={`${producto.nombre} — admin`} showChrome={false}>
+  <div class={styles.page}>
+    <AdminNav active="productos" />
+    <a class={styles.back} href="/admin/productos">← Volver</a>
+    <div class={styles.pageHead}>
+      <h1 class={styles.pageTitle}>{producto.nombre}</h1>
+      <span style="color: var(--text-muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: var(--fs-sm)">/{producto.slug}</span>
+    </div>
+
+    {saved && <p class={styles.flash}>Cambios guardados.</p>}
+    {errorMsg && <p class:list={[styles.flash, styles.flashError]}>{errorMsg}</p>}
+
+    <form class={styles.editForm} method="POST" action={`/api/admin/products/${producto.slug}`}>
+      <div class={styles.fieldRow}>
+        <label class={styles.metaItem}>
+          <span class={styles.metaLabel}>Nombre</span>
+          <input class={styles.textInput} type="text" name="nombre" required maxlength="120" value={producto.nombre} />
+        </label>
+        <label class={styles.metaItem}>
+          <span class={styles.metaLabel}>SKU</span>
+          <input class={styles.textInput} type="text" name="sku" maxlength="60" value={producto.sku ?? ''} />
+        </label>
+      </div>
+
+      <div class={styles.fieldRow}>
+        <label class={styles.metaItem}>
+          <span class={styles.metaLabel}>Precio (MXN)</span>
+          <input class={styles.textInput} type="number" name="precio" required min="0" step="1" value={producto.precio} />
+        </label>
+        <label class={styles.metaItem}>
+          <span class={styles.metaLabel}>Orden de aparición</span>
+          <input class={styles.textInput} type="number" name="orden" step="1" value={producto.orden} />
+        </label>
+      </div>
+
+      <label class={styles.metaItem}>
+        <span class={styles.metaLabel}>Descripción corta</span>
+        <input class={styles.textInput} type="text" name="descripcionCorta" required maxlength="500" value={producto.descripcionCorta} />
+      </label>
+
+      <label class={styles.metaItem}>
+        <span class={styles.metaLabel}>Descripción larga (markdown)</span>
+        <textarea class={styles.textarea} name="descripcionMd" maxlength="20000">{producto.descripcionMd ?? ''}</textarea>
+      </label>
+
+      <div class={styles.metaItem}>
+        <span class={styles.metaLabel}>Visibilidad</span>
+        <label class={styles.checkboxField}>
+          <input type="checkbox" name="disponible" value="on" checked={producto.disponible} />
+          <span>Disponible en el catálogo</span>
+        </label>
+      </div>
+
+      <fieldset class={styles.metaItem} style="border: 0; padding: 0; margin: 0">
+        <legend class={styles.metaLabel}>Colecciones</legend>
+        <div style="display: flex; gap: var(--s-3); flex-wrap: wrap; padding-top: var(--s-2)">
+          {allColecciones.length === 0 ? (
+            <span style="color: var(--text-muted); font-size: var(--fs-sm)">No hay colecciones todavía.</span>
+          ) : (
+            allColecciones.map((c) => (
+              <label class={styles.checkboxField}>
+                <input type="checkbox" name="coleccion" value={c.slug} checked={productoCols.has(c.slug)} />
+                <span>{c.nombre}</span>
+              </label>
+            ))
+          )}
+        </div>
+        <input type="hidden" name="colecciones" id="colecciones-csv" value={producto.colecciones.join(',')} />
+      </fieldset>
+
+      <button type="submit" class={styles.save}>Guardar</button>
+    </form>
+
+    <div class={styles.sectionBox}>
+      <span class={styles.sectionTitleSm}>Imágenes</span>
+
+      {producto.imagenes.length === 0 ? (
+        <p style="color: var(--text-muted); font-size: var(--fs-sm)">
+          Este producto no tiene imágenes. Sube la primera abajo.
+        </p>
+      ) : (
+        <div class={styles.imagesGrid}>
+          {producto.imagenes.map((img, i) => (
+            <div class={styles.imageCard}>
+              <img src={img.url} alt={`Imagen ${i + 1}`} />
+              <div class={styles.imageCardActions}>
+                <span style="color: var(--text-muted)">#{i + 1}</span>
+                <form method="POST" action={`/api/admin/products/${producto.slug}/images/${img.id}/delete`}>
+                  <button type="submit" class:list={[styles.iconBtn, styles.iconBtnDanger]}>Borrar</button>
+                </form>
+              </div>
+              {producto.imagenes.length > 1 && (
+                <div class={styles.imageCardActions}>
+                  <button
+                    type="button"
+                    class={styles.iconBtn}
+                    data-move="up"
+                    data-id={img.id}
+                    disabled={i === 0}
+                  >↑</button>
+                  <button
+                    type="button"
+                    class={styles.iconBtn}
+                    data-move="down"
+                    data-id={img.id}
+                    disabled={i === producto.imagenes.length - 1}
+                  >↓</button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      <form
+        class={styles.uploadField}
+        method="POST"
+        action={`/api/admin/products/${producto.slug}/images`}
+        enctype="multipart/form-data"
+      >
+        <label class={styles.metaItem}>
+          <span class={styles.metaLabel}>Subir imagen</span>
+          <input type="file" name="imagen" accept="image/png,image/jpeg,image/webp,image/avif,image/gif,image/svg+xml" required />
+          <span class={styles.slugHint}>JPG, PNG, WebP, AVIF, GIF o SVG. Máx. 5 MB.</span>
+        </label>
+        <button type="submit" class={styles.save}>Subir</button>
+      </form>
+
+      {producto.imagenes.length > 1 && (
+        <form
+          id="reorder-form"
+          method="POST"
+          action={`/api/admin/products/${producto.slug}/images/reorder`}
+          style="display: none"
+        >
+          <input type="hidden" name="ids" id="reorder-ids" />
+        </form>
+      )}
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  const colCsv = document.getElementById('colecciones-csv') as HTMLInputElement | null;
+  document.querySelector('form')?.addEventListener('submit', () => {
+    const checked = Array.from(
+      document.querySelectorAll<HTMLInputElement>('input[name="coleccion"]:checked'),
+    ).map((el) => el.value);
+    if (colCsv) colCsv.value = checked.join(',');
+  });
+
+  document.querySelectorAll<HTMLButtonElement>('[data-move]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.id;
+      const dir = btn.dataset.move;
+      const cards = Array.from(document.querySelectorAll<HTMLElement>('[data-move]'))
+        .map((b) => b.dataset.id)
+        .filter((v, i, arr) => v && arr.indexOf(v) === i) as string[];
+      const idx = cards.indexOf(id ?? '');
+      if (idx < 0) return;
+      const newIdx = dir === 'up' ? idx - 1 : idx + 1;
+      if (newIdx < 0 || newIdx >= cards.length) return;
+      [cards[idx], cards[newIdx]] = [cards[newIdx], cards[idx]];
+      const idsInput = document.getElementById('reorder-ids') as HTMLInputElement | null;
+      const form = document.getElementById('reorder-form') as HTMLFormElement | null;
+      if (idsInput && form) {
+        idsInput.value = cards.join(',');
+        form.submit();
+      }
+    });
+  });
+</script>

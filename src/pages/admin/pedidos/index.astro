@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../../layouts/BaseLayout.astro';
+import AdminNav from '../../../components/AdminNav.astro';
 import { listOrders } from '../../../lib/orders';
 import { formatMXN } from '../../../lib/money';
 import { ORDER_STATE_LABELS } from '../../../lib/db';
@@ -23,11 +24,9 @@ const badgeClass = (estado: string) => ({
 ---
 <BaseLayout title="Pedidos — admin" showChrome={false}>
   <div class={styles.page}>
+    <AdminNav active="pedidos" />
     <div class={styles.pageHead}>
       <h1 class={styles.pageTitle}>Pedidos</h1>
-      <form method="POST" action="/api/admin/logout">
-        <button class={styles.logout} type="submit">Salir</button>
-      </form>
     </div>
 
     {orders.length === 0 ? (

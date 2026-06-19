@@ -1,29 +1,25 @@
 ---
-import { getCollection, getEntry } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ProductCard from '../../components/ProductCard.astro';
+import { getColeccion } from '../../lib/colecciones';
+import { listProductos } from '../../lib/products';
 import styles from '../../styles/page.module.css';
 
-export async function getStaticPaths() {
-  const colecciones = await getCollection('colecciones');
-  return colecciones.map((c) => ({ params: { slug: c.id } }));
-}
+export const prerender = false;
 
 const { slug } = Astro.params;
-const coleccion = await getEntry('colecciones', slug!);
+const coleccion = slug ? await getColeccion(slug) : null;
 if (!coleccion) return Astro.redirect('/404');
 
-const productos = (await getCollection('productos'))
-  .filter((p) => p.data.colecciones.includes(slug!))
-  .sort((a, b) => a.data.orden - b.data.orden);
+const productos = await listProductos({ coleccion: coleccion.slug });
 ---
-<BaseLayout title={`${coleccion.data.nombre} — ALUNA`} description={coleccion.data.descripcion}>
+<BaseLayout title={`${coleccion.nombre} — ALUNA`} description={coleccion.descripcion}>
   <section class={styles.section}>
     <header class={styles.sectionHead}>
       <p class={styles.eyebrow}>Colección</p>
-      <h1 class={styles.sectionTitle}>{coleccion.data.nombre}</h1>
+      <h1 class={styles.sectionTitle}>{coleccion.nombre}</h1>
       <p style="max-width: 600px; color: var(--text-muted); margin-top: var(--s-2)">
-        {coleccion.data.descripcion}
+        {coleccion.descripcion}
       </p>
     </header>
     {productos.length === 0 ? (
@@ -32,11 +28,11 @@ const productos = (await getCollection('productos'))
       <div class={styles.productGrid}>
         {productos.map((p) => (
           <ProductCard
-            slug={p.id}
-            nombre={p.data.nombre}
-            precio={p.data.precio}
-            imagen={p.data.imagenes[0]}
-            disponible={p.data.disponible}
+            slug={p.slug}
+            nombre={p.nombre}
+            precio={p.precio}
+            imagen={p.imagenes[0]?.url ?? null}
+            disponible={p.disponible}
           />
         ))}
       </div>

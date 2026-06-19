@@ -1,0 +1,43 @@
+import type { APIRoute } from 'astro';
+import { customAlphabet } from 'nanoid';
+import { getColeccion, updateColeccion } from '../../../../../lib/colecciones';
+import {
+  putBlob,
+  imageUrlForKey,
+  isAllowedImageType,
+  extForContentType,
+} from '../../../../../lib/blobs';
+
+export const prerender = false;
+
+const newKey = customAlphabet('0123456789abcdefghijklmnopqrstuvwxyz', 16);
+const MAX_BYTES = 5 * 1024 * 1024;
+
+export const POST: APIRoute = async ({ params, request, redirect }) => {
+  const slug = params.slug;
+  if (!slug) return new Response('Bad request', { status: 400 });
+
+  const existing = await getColeccion(slug);
+  if (!existing) return new Response('Not found', { status: 404 });
+
+  const form = await request.formData();
+  const file = form.get('hero');
+  if (!(file instanceof File)) {
+    return redirect(`/admin/colecciones/${slug}?error=no-file`, 303);
+  }
+  const contentType = file.type || 'application/octet-stream';
+  if (!isAllowedImageType(contentType)) {
+    return redirect(`/admin/colecciones/${slug}?error=bad-type`, 303);
+  }
+  if (file.size > MAX_BYTES) {
+    return redirect(`/admin/colecciones/${slug}?error=too-big`, 303);
+  }
+
+  const ext = extForContentType(contentType);
+  const key = `colecciones/${slug}/${newKey()}.${ext}`;
+  const buf = new Uint8Array(await file.arrayBuffer());
+  await putBlob({ key, data: buf, contentType });
+
+  await updateColeccion(slug, { hero: imageUrlForKey(key) });
+  return redirect(`/admin/colecciones/${slug}?saved=1`, 303);
+};
