@@ -277,6 +277,32 @@
   background: #efd9d9;
 }
 
+/* Toast notifications (auto-dismiss) */
+.toast {
+  position: fixed;
+  top: var(--s-4);
+  right: var(--s-4);
+  z-index: 200;
+  padding: var(--s-3) var(--s-4);
+  background: color-mix(in srgb, var(--color-verde-salvia) 80%, white);
+  color: var(--text);
+  border-radius: var(--r-md);
+  font-size: var(--fs-sm);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  animation: toastIn 200ms ease-out, toastOut 300ms ease-in 2.7s forwards;
+  pointer-events: none;
+}
+.toastError {
+  background: #f5cccc;
+}
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes toastOut {
+  to { opacity: 0; transform: translateY(-8px); }
+}
+
 /* Productos / colecciones admin */
 .newBtn {
   padding: var(--s-2) var(--s-4);

@@ -35,7 +35,7 @@ const productos = await listProductos({ includeUnavailable: true });
         </thead>
         <tbody>
           {productos.map((p) => (
-            <tr>
+            <tr data-row-slug={p.slug}>
               <td class={styles.thumbCell}>
                 {p.imagenes[0] && (
                   <img class={styles.thumb} src={p.imagenes[0].url} alt={p.nombre} loading="lazy" />
@@ -50,13 +50,23 @@ const productos = await listProductos({ includeUnavailable: true });
               </td>
               <td>{formatMXN(p.precio)}</td>
               <td>
-                <span class:list={[styles.badge, p.disponible ? styles.badgeEntregado : styles.badgeCancelado]}>
+                <span
+                  data-badge
+                  data-cls-on={styles.badgeEntregado}
+                  data-cls-off={styles.badgeCancelado}
+                  class:list={[styles.badge, p.disponible ? styles.badgeEntregado : styles.badgeCancelado]}
+                >
                   {p.disponible ? 'Disponible' : 'Oculto'}
                 </span>
               </td>
               <td style="text-align: right">
-                <form method="POST" action={`/api/admin/products/${p.slug}/toggle`} style="display: inline">
-                  <button type="submit" class={styles.toggleBtn}>
+                <form
+                  method="POST"
+                  action={`/api/admin/products/${p.slug}/toggle`}
+                  data-toggle-form
+                  style="display: inline"
+                >
+                  <button type="submit" class={styles.toggleBtn} data-toggle-btn>
                     {p.disponible ? 'Ocultar' : 'Mostrar'}
                   </button>
                 </form>
@@ -68,3 +78,37 @@ const productos = await listProductos({ includeUnavailable: true });
     )}
   </div>
 </BaseLayout>
+
+<script>
+  document.querySelectorAll<HTMLFormElement>('[data-toggle-form]').forEach((form) => {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = form.querySelector<HTMLButtonElement>('[data-toggle-btn]');
+      const badge = form.closest('tr')?.querySelector<HTMLElement>('[data-badge]');
+      if (!btn || !badge) return;
+
+      const clsOn = badge.dataset.clsOn ?? '';
+      const clsOff = badge.dataset.clsOff ?? '';
+
+      btn.disabled = true;
+      try {
+        const res = await fetch(form.action, {
+          method: 'POST',
+          headers: { Accept: 'application/json' },
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = (await res.json()) as { ok: boolean; disponible: boolean };
+        if (!data.ok) throw new Error('no-ok');
+        btn.textContent = data.disponible ? 'Ocultar' : 'Mostrar';
+        badge.textContent = data.disponible ? 'Disponible' : 'Oculto';
+        badge.classList.remove(data.disponible ? clsOff : clsOn);
+        badge.classList.add(data.disponible ? clsOn : clsOff);
+      } catch {
+        // Fall back to full reload if the AJAX path breaks.
+        window.location.reload();
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  });
+</script>

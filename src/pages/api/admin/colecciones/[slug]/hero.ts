@@ -7,6 +7,7 @@ import {
   isAllowedImageType,
   extForContentType,
 } from '../../../../../lib/blobs';
+import { json, jsonError, wantsJson } from '../../../../../lib/admin-response';
 
 export const prerender = false;
 
@@ -20,24 +21,28 @@ export const POST: APIRoute = async ({ params, request, redirect }) => {
   const existing = await getColeccion(slug);
   if (!existing) return new Response('Not found', { status: 404 });
 
+  const wantJson = wantsJson(request);
+  const fail = (code: string) =>
+    wantJson
+      ? jsonError(code, 400)
+      : redirect(`/admin/colecciones/${slug}?error=${code}`, 303);
+
   const form = await request.formData();
   const file = form.get('hero');
-  if (!(file instanceof File)) {
-    return redirect(`/admin/colecciones/${slug}?error=no-file`, 303);
-  }
+  if (!(file instanceof File)) return fail('no-file');
+
   const contentType = file.type || 'application/octet-stream';
-  if (!isAllowedImageType(contentType)) {
-    return redirect(`/admin/colecciones/${slug}?error=bad-type`, 303);
-  }
-  if (file.size > MAX_BYTES) {
-    return redirect(`/admin/colecciones/${slug}?error=too-big`, 303);
-  }
+  if (!isAllowedImageType(contentType)) return fail('bad-type');
+  if (file.size > MAX_BYTES) return fail('too-big');
 
   const ext = extForContentType(contentType);
   const key = `colecciones/${slug}/${newKey()}.${ext}`;
   const buf = new Uint8Array(await file.arrayBuffer());
   await putBlob({ key, data: buf, contentType });
 
-  await updateColeccion(slug, { hero: imageUrlForKey(key) });
+  const url = imageUrlForKey(key);
+  await updateColeccion(slug, { hero: url });
+
+  if (wantJson) return json({ ok: true, url });
   return redirect(`/admin/colecciones/${slug}?saved=1`, 303);
 };

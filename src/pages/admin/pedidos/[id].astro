@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../../layouts/BaseLayout.astro';
+import AdminOrderEdit from '../../../components/islands/AdminOrderEdit.tsx';
 import { getOrder, getStatusHistory } from '../../../lib/orders';
 import { formatMXN } from '../../../lib/money';
 import { ORDER_STATES, ORDER_STATE_LABELS } from '../../../lib/db';
@@ -13,7 +14,13 @@ if (!order) return new Response('No encontrado', { status: 404 });
 
 const history = await getStatusHistory(id!);
 
-const saved = Astro.url.searchParams.get('saved') === '1';
+const orderInitial = {
+  id: order.id,
+  estado: order.estado,
+  tracking: order.tracking ?? '',
+  nota: order.nota ?? '',
+};
+const stateOptions = ORDER_STATES.map((s) => ({ value: s, label: ORDER_STATE_LABELS[s] }));
 
 const formatDate = (iso: string) =>
   new Intl.DateTimeFormat('es-MX', { dateStyle: 'long', timeStyle: 'short' }).format(new Date(iso));
@@ -31,8 +38,6 @@ const waLink = order.clienteTelefono
       <h1 class={styles.detailId}>{order.id}</h1>
       <p style="color: var(--text-muted); font-size: var(--fs-sm)">Realizado el {formatDate(order.createdAt)}</p>
     </div>
-
-    {saved && <p class={styles.flash}>Cambios guardados.</p>}
 
     <div class={styles.metaGrid}>
       <div class={styles.metaItem}>
@@ -56,25 +61,7 @@ const waLink = order.clienteTelefono
       </div>
     </div>
 
-    <form class={styles.editForm} method="POST" action={`/api/admin/orders/${order.id}`}>
-      <label class={styles.metaItem}>
-        <span class={styles.metaLabel}>Estado</span>
-        <select class={styles.select} name="estado">
-          {ORDER_STATES.map((s) => (
-            <option value={s} selected={s === order.estado}>{ORDER_STATE_LABELS[s]}</option>
-          ))}
-        </select>
-      </label>
-      <label class={styles.metaItem}>
-        <span class={styles.metaLabel}>Guía de envío (opcional)</span>
-        <input class={styles.textInput} type="text" name="tracking" value={order.tracking ?? ''} />
-      </label>
-      <label class={styles.metaItem}>
-        <span class={styles.metaLabel}>Nota para el cliente (opcional)</span>
-        <textarea class={styles.textarea} name="nota">{order.nota ?? ''}</textarea>
-      </label>
-      <button type="submit" class={styles.save}>Guardar</button>
-    </form>
+    <AdminOrderEdit client:load initial={orderInitial} states={stateOptions} />
 
     <div class={styles.itemList}>
       {order.items.map((item) => (

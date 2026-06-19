@@ -32,3 +32,6 @@ pnpm-debug.log*
 
 # Local Netlify folder
 .netlify
+
+# Local dev blob storage (see src/lib/blobs.ts)
+.netlify-blobs-local/
