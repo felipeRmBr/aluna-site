@@ -50,6 +50,7 @@ cp .env.example .env
 - `ADMIN_PASSWORD`: contraseña que usarás en `/admin`.
 - `ADMIN_COOKIE_SECRET`: genera con `openssl rand -hex 32`. Si rota, todas las sesiones admin se invalidan.
 - `WHATSAPP_PHONE`: número con código de país, sólo dígitos, sin `+` (formato `5215XXXXXXXXXX`). Se renderiza en los enlaces `wa.me` que ven los clientes — no es un secreto.
+- `NETLIFY_SITE_ID` + `NETLIFY_AUTH_TOKEN` (opcional): permite que dev lea imágenes existentes en Netlify Blobs cuando usas una base de datos que ya contiene URLs `/api/images/*`. Las subidas hechas en dev se guardan localmente en `.netlify-blobs-local/`.
 
 ### 2. Migraciones
 

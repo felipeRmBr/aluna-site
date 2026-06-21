@@ -2,6 +2,8 @@
   display: flex;
   flex-direction: column;
   gap: var(--s-3);
+  min-width: 0;
+  max-width: 100%;
 }
 
 .mainBtn {
@@ -51,9 +53,14 @@
 .thumbs {
   display: flex;
   gap: var(--s-2);
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   overflow-x: auto;
+  overscroll-behavior-inline: contain;
   scrollbar-width: thin;
   padding-bottom: var(--s-1);
+  -webkit-overflow-scrolling: touch;
 }
 .thumbs::-webkit-scrollbar { height: 6px; }
 .thumbs::-webkit-scrollbar-thumb { background: var(--line); border-radius: 999px; }

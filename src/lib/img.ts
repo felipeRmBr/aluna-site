@@ -3,6 +3,9 @@
  * resizes / re-encodes / caches it at the edge. Pass through external
  * URLs unchanged.
  *
+ * During local dev, blob-backed images must go directly through /api/images:
+ * Netlify's local image optimizer cannot see our production blob fallback.
+ *
  * https://docs.netlify.com/image-cdn/overview/
  */
 
@@ -18,6 +21,7 @@ export type ImgOpts = {
 export function img(url: string | null | undefined, opts: ImgOpts = {}): string {
   if (!url) return '';
   if (/^https?:\/\//i.test(url)) return url;
+  if (import.meta.env.DEV && url.startsWith('/api/images/')) return url;
 
   const params = new URLSearchParams();
   params.set('url', url);
