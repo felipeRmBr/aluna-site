@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img" aria-label="ALUNA patrón botánico suave">
+  <defs>
+    <g id="twig" fill="none" stroke="#C9C2B8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M0 0 c-2 -22 -2 -42 -8 -62 -3 -12 -9 -22 -18 -32" stroke-width="1.4"/>
+      <path d="M-8 -52 c-12 -5 -20 -12 -25 -22" stroke-width="1"/>
+      <path d="M-4 -38 c11 -5 19 -12 24 -22" stroke-width="1"/>
+      <path d="M-10 -22 c-11 1 -19 0 -28 -5" stroke-width="1"/>
+      <path d="M-4 -10 c11 -3 18 -8 24 -16" stroke-width="1"/>
+      <ellipse cx="-33" cy="-74" rx="3.5" ry="9" transform="rotate(-38 -33 -74)" fill="#C9C2B8" stroke="none"/>
+      <ellipse cx="20" cy="-60" rx="3.5" ry="9" transform="rotate(35 20 -60)" fill="#C9C2B8" stroke="none"/>
+      <ellipse cx="-38" cy="-27" rx="3.5" ry="9" transform="rotate(-72 -38 -27)" fill="#C9C2B8" stroke="none"/>
+      <ellipse cx="24" cy="-26" rx="3.5" ry="9" transform="rotate(38 24 -26)" fill="#C9C2B8" stroke="none"/>
+    </g>
+  </defs>
+  <rect width="400" height="400" fill="#F7F3ED"/>
+  <g opacity=".62">
+    <use href="#twig" transform="translate(72 132)"/>
+    <use href="#twig" transform="translate(330 110) rotate(40)"/>
+    <use href="#twig" transform="translate(118 360) rotate(-18)"/>
+    <use href="#twig" transform="translate(346 358) rotate(22)"/>
+    <use href="#twig" transform="translate(248 220) rotate(-8)"/>
+  </g>
+  <g fill="#C9B6E4" opacity=".75">
+    <path d="M210 70 a26 26 0 1 0 0 52 a20 26 0 1 1 0 -52 z"/>
+    <path d="M312 274 a24 24 0 1 0 0 48 a18 24 0 1 1 0 -48 z"/>
+    <path d="M82 258 a24 24 0 1 0 0 48 a18 24 0 1 1 0 -48 z"/>
+    <path d="M252 96l3 7 7 3-7 3-3 7-3-7-7-3 7-3z"/>
+    <path d="M178 312l2.5 6 6 2.5-6 2.5-2.5 6-2.5-6-6-2.5 6-2.5z"/>
+    <circle cx="60" cy="180" r="2.2"/>
+    <circle cx="298" cy="170" r="2.2"/>
+    <circle cx="158" cy="62" r="2"/>
+  </g>
+</svg>

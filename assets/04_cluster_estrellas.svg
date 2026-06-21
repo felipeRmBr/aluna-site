@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 180" role="img" aria-label="ALUNA cluster de estrellas">
+  <g fill="#C9B6E4">
+    <path d="M83 61l2.5 6 6 2.5-6 2.5-2.5 6-2.5-6-6-2.5 6-2.5z"/>
+    <path d="M120 45l3 7 7 3-7 3-3 7-3-7-7-3 7-3z"/>
+    <path d="M151 65l4 9 9 4-9 4-4 9-4-9-9-4 9-4z"/>
+    <path d="M140 100l3 7 7 3-7 3-3 7-3-7-7-3 7-3z"/>
+    <circle cx="176" cy="57" r="2.5"/>
+    <circle cx="67" cy="106" r="2.2"/>
+    <circle cx="178" cy="100" r="2.2"/>
+    <circle cx="100" cy="90" r="1.9"/>
+  </g>
+</svg>
