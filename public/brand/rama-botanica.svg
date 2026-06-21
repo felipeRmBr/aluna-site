@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 220" role="img" aria-label="ALUNA rama botánica fina">
+  <g fill="none" stroke="#C9C2B8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M91 201c-3-43-2-80-11-122C75 59 63 37 47 19" stroke-width="2"/>
+    <path d="M80 85C59 76 46 63 38 45" stroke-width="1.4"/>
+    <path d="M85 103c-19 2-35-1-51-10" stroke-width="1.4"/>
+    <path d="M89 122c-19 8-35 11-54 6" stroke-width="1.4"/>
+    <path d="M94 141c16-8 29-20 39-35" stroke-width="1.4"/>
+    <path d="M92 117c17-5 30-14 41-28" stroke-width="1.4"/>
+    <path d="M87 97c14-9 23-21 30-36" stroke-width="1.4"/>
+  </g>
+  <g fill="#C9C2B8" opacity=".95">
+    <ellipse cx="38" cy="44" rx="6" ry="14" transform="rotate(-38 38 44)"/>
+    <ellipse cx="34" cy="95" rx="6" ry="14" transform="rotate(-58 34 95)"/>
+    <ellipse cx="35" cy="129" rx="6" ry="14" transform="rotate(-78 35 129)"/>
+    <ellipse cx="133" cy="107" rx="6" ry="14" transform="rotate(48 133 107)"/>
+    <ellipse cx="132" cy="87" rx="6" ry="13" transform="rotate(30 132 87)"/>
+    <ellipse cx="116" cy="60" rx="5.5" ry="12" transform="rotate(18 116 60)"/>
+  </g>
+</svg>
