@@ -1,11 +1,13 @@
 ---
 import { marked } from 'marked';
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import ProductCard from '../../components/ProductCard.astro';
 import ProductGallery from '../../components/islands/ProductGallery.tsx';
 import { formatMXN } from '../../lib/money';
-import { getProducto } from '../../lib/products';
+import { getProducto, listProductos } from '../../lib/products';
 import { getColeccion } from '../../lib/colecciones';
 import styles from './detail.module.css';
+import pageStyles from '../../styles/page.module.css';
 
 export const prerender = false;
 
@@ -25,12 +27,25 @@ const galleryImages = producto.imagenes.map((img, i) => ({
   url: img.url,
   alt: `${producto.nombre} — vista ${i + 1}`,
 }));
+
+const allProductos = await listProductos();
+const otrosProductos = (() => {
+  const others = allProductos.filter((p) => p.slug !== producto.slug);
+  const sameCollection = others.filter((p) =>
+    p.colecciones.some((c) => producto.colecciones.includes(c)),
+  );
+  const rest = others.filter(
+    (p) => !p.colecciones.some((c) => producto.colecciones.includes(c)),
+  );
+  return [...sameCollection, ...rest].slice(0, 4);
+})();
 ---
 <BaseLayout title={`${producto.nombre} — ALUNA`} description={producto.descripcionCorta}>
   <article class={styles.wrap}>
-    <ProductGallery client:load images={galleryImages} nombre={producto.nombre} />
+    <div class={styles.main}>
+      <ProductGallery client:load images={galleryImages} nombre={producto.nombre} />
 
-    <div class={styles.info}>
+      <div class={styles.info}>
       {colsResueltas.length > 0 && (
         <p class={styles.crumbs}>
           {colsResueltas.map((c, i) => {
@@ -67,10 +82,30 @@ const galleryImages = producto.imagenes.map((img, i) => ({
       </button>
 
       {producto.sku && <p class={styles.sku}>SKU: {producto.sku}</p>}
+      </div>
     </div>
+
+    {otrosProductos.length > 0 && (
+      <section class={styles.related}>
+        <header class={pageStyles.sectionHead}>
+          <p class={pageStyles.eyebrow}>Explorar</p>
+          <h2 class={pageStyles.sectionTitle}>Otros productos</h2>
+        </header>
+        <div class={pageStyles.productGrid}>
+          {otrosProductos.map((p) => (
+            <ProductCard
+              slug={p.slug}
+              nombre={p.nombre}
+              precio={p.precio}
+              imagen={p.imagenes[0]?.url ?? null}
+              disponible={p.disponible}
+            />
+          ))}
+        </div>
+      </section>
+    )}
   </article>
 </BaseLayout>
-
 <script>
   import { addToCart, openCart } from '../../stores/cart';
 
@@ -86,3 +121,4 @@ const galleryImages = producto.imagenes.map((img, i) => ({
     });
   });
 </script>
+
