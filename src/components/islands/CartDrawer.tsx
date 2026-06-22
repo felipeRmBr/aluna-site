@@ -99,38 +99,46 @@ export default function CartDrawer() {
                 <li key={l.slug} class={styles.line}>
                   <img
                     class={styles.thumb}
-                    src={img(l.imagen ?? '/img/placeholder.svg', { w: 160, fit: 'cover', fm: 'webp', q: 78 })}
-                    alt=""
+                    src={img(l.imagen ?? '/img/placeholder.svg', { w: 180, h: 180, fit: 'cover', fm: 'webp', q: 78 })}
+                    alt={l.nombre}
+                    loading="lazy"
                   />
                   <div class={styles.info}>
-                    <span class={styles.name}>{l.nombre}</span>
-                    <span class={styles.price}>{formatMXN(l.precio)} c/u</span>
-                    <button
-                      type="button"
-                      class={styles.remove}
-                      onClick={() => removeFromCart(l.slug)}
-                    >
-                      Quitar
-                    </button>
-                  </div>
-                  <div class={styles.qty}>
-                    <button
-                      type="button"
-                      class={styles.qtyBtn}
-                      aria-label="Restar"
-                      onClick={() => setQty(l.slug, l.qty - 1)}
-                    >
-                      −
-                    </button>
-                    <span class={styles.qtyN}>{l.qty}</span>
-                    <button
-                      type="button"
-                      class={styles.qtyBtn}
-                      aria-label="Sumar"
-                      onClick={() => setQty(l.slug, l.qty + 1)}
-                    >
-                      +
-                    </button>
+                    <div class={styles.itemHeader}>
+                      <div class={styles.itemCopy}>
+                        <span class={styles.name}>{l.nombre}</span>
+                        <span class={styles.price}>{formatMXN(l.precio)} c/u</span>
+                      </div>
+                      <span class={styles.lineTotal}>{formatMXN(l.precio * l.qty)}</span>
+                    </div>
+                    <div class={styles.actions}>
+                      <div class={styles.qty} aria-label={`Cantidad de ${l.nombre}`}>
+                        <button
+                          type="button"
+                          class={styles.qtyBtn}
+                          aria-label="Restar"
+                          onClick={() => setQty(l.slug, l.qty - 1)}
+                        >
+                          −
+                        </button>
+                        <span class={styles.qtyN}>{l.qty}</span>
+                        <button
+                          type="button"
+                          class={styles.qtyBtn}
+                          aria-label="Sumar"
+                          onClick={() => setQty(l.slug, l.qty + 1)}
+                        >
+                          +
+                        </button>
+                      </div>
+                      <button
+                        type="button"
+                        class={styles.remove}
+                        onClick={() => removeFromCart(l.slug)}
+                      >
+                        Quitar
+                      </button>
+                    </div>
                   </div>
                 </li>
               ))}
