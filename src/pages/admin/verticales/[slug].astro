@@ -1,0 +1,91 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import AdminNav from '../../../components/AdminNav.astro';
+import { getVertical } from '../../../lib/verticales';
+import styles from '../admin.module.css';
+
+export const prerender = false;
+
+const { slug } = Astro.params;
+const vertical = slug ? await getVertical(slug) : null;
+if (!vertical) return new Response('No encontrado', { status: 404 });
+---
+<BaseLayout title={`${vertical.nombre} — admin`} showChrome={false}>
+  <div class={styles.page}>
+    <AdminNav active="verticales" />
+    <a class={styles.back} href="/admin/verticales">← Volver</a>
+    <div class={styles.pageHead}>
+      <h1 class={styles.pageTitle}>{vertical.nombre}</h1>
+      <span style="color: var(--text-muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: var(--fs-sm)">/{vertical.slug}</span>
+    </div>
+
+    <form class={styles.editForm} method="POST" action={`/api/admin/verticales/${vertical.slug}`}>
+      <div class={styles.fieldRow}>
+        <label class={styles.metaItem}>
+          <span class={styles.metaLabel}>Nombre</span>
+          <input class={styles.textInput} type="text" name="nombre" required maxlength="120" value={vertical.nombre} />
+        </label>
+        <label class={styles.metaItem}>
+          <span class={styles.metaLabel}>Orden</span>
+          <input class={styles.textInput} type="number" name="orden" step="1" value={vertical.orden} />
+        </label>
+      </div>
+      <button type="submit" class={styles.save}>Guardar</button>
+    </form>
+
+    <div id="colores" class={styles.sectionBox} style="scroll-margin-top: var(--s-6)">
+      <span class={styles.sectionTitleSm}>Catálogo de colores</span>
+      <p style="color: var(--text-muted); font-size: var(--fs-sm)">
+        Estos colores estarán disponibles para crear combinaciones en productos de esta vertical.
+      </p>
+
+      <form class={styles.editForm} method="POST" action={`/api/admin/verticales/${vertical.slug}/colores`} style="margin-top: var(--s-4)">
+        <div class={styles.fieldRow}>
+          <label class={styles.metaItem}>
+            <span class={styles.metaLabel}>Nombre del color</span>
+            <input class={styles.textInput} type="text" name="nombre" required maxlength="120" />
+          </label>
+          <label class={styles.metaItem}>
+            <span class={styles.metaLabel}>Hex opcional</span>
+            <input class={styles.textInput} type="text" name="hex" maxlength="20" placeholder="#F7F3ED" />
+          </label>
+          <label class={styles.metaItem}>
+            <span class={styles.metaLabel}>Orden</span>
+            <input class={styles.textInput} type="number" name="orden" value="0" step="1" />
+          </label>
+        </div>
+        <button type="submit" class={styles.save}>Agregar color</button>
+      </form>
+
+      {vertical.colores.length === 0 ? (
+        <p style="color: var(--text-muted); font-size: var(--fs-sm)">Aún no hay colores.</p>
+      ) : (
+        <div style="display: grid; gap: var(--s-3); margin-top: var(--s-4)">
+          {vertical.colores.map((color) => (
+            <form
+              class={styles.itemRow}
+              method="POST"
+              action={`/api/admin/verticales/${vertical.slug}/colores/${color.id}`}
+              style="grid-template-columns: 1fr 150px 100px 120px auto; align-items: center"
+            >
+              <input class={styles.textInput} type="text" name="nombre" value={color.nombre} required maxlength="120" />
+              <input class={styles.textInput} type="text" name="hex" value={color.hex ?? ''} maxlength="20" />
+              <input class={styles.textInput} type="number" name="orden" value={color.orden} step="1" />
+              <label class={styles.checkboxField}>
+                <input type="checkbox" name="activo" value="on" checked={color.activo} />
+                <span>Activo</span>
+              </label>
+              <div style="display: flex; gap: var(--s-2); justify-content: flex-end">
+                {color.hex && (
+                  <span style={`width: 24px; height: 24px; border-radius: 999px; border: 1px solid var(--line); background: ${color.hex}`}></span>
+                )}
+                <button type="submit" class={styles.iconBtn}>Guardar</button>
+                <button type="submit" name="intent" value="delete" class:list={[styles.iconBtn, styles.iconBtnDanger]}>Borrar</button>
+              </div>
+            </form>
+          ))}
+        </div>
+      )}
+    </div>
+  </div>
+</BaseLayout>

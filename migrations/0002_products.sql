@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS colecciones (
+CREATE TABLE IF NOT EXISTS collections (
   slug TEXT PRIMARY KEY,
   nombre TEXT NOT NULL,
   descripcion TEXT NOT NULL,
@@ -10,9 +10,9 @@ CREATE TABLE IF NOT EXISTS colecciones (
   updated_at TEXT NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_colecciones_orden ON colecciones(orden);
+CREATE INDEX IF NOT EXISTS idx_collections_orden ON collections(orden);
 
-CREATE TABLE IF NOT EXISTS productos (
+CREATE TABLE IF NOT EXISTS products (
   slug TEXT PRIMARY KEY,
   nombre TEXT NOT NULL,
   precio REAL NOT NULL CHECK (precio >= 0),
@@ -25,24 +25,24 @@ CREATE TABLE IF NOT EXISTS productos (
   updated_at TEXT NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_productos_disponible_orden ON productos(disponible, orden);
+CREATE INDEX IF NOT EXISTS idx_products_disponible_orden ON products(disponible, orden);
 
-CREATE TABLE IF NOT EXISTS producto_imagenes (
+CREATE TABLE IF NOT EXISTS product_images (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  producto_slug TEXT NOT NULL REFERENCES productos(slug) ON DELETE CASCADE,
+  producto_slug TEXT NOT NULL REFERENCES products(slug) ON DELETE CASCADE,
   url TEXT NOT NULL,
   blob_key TEXT,
   orden INTEGER NOT NULL DEFAULT 0
 );
 
-CREATE INDEX IF NOT EXISTS idx_producto_imagenes_producto_orden
-  ON producto_imagenes(producto_slug, orden);
+CREATE INDEX IF NOT EXISTS idx_product_images_producto_orden
+  ON product_images(producto_slug, orden);
 
-CREATE TABLE IF NOT EXISTS producto_colecciones (
-  producto_slug TEXT NOT NULL REFERENCES productos(slug) ON DELETE CASCADE,
-  coleccion_slug TEXT NOT NULL REFERENCES colecciones(slug) ON DELETE CASCADE,
+CREATE TABLE IF NOT EXISTS product_collections (
+  producto_slug TEXT NOT NULL REFERENCES products(slug) ON DELETE CASCADE,
+  coleccion_slug TEXT NOT NULL REFERENCES collections(slug) ON DELETE CASCADE,
   PRIMARY KEY (producto_slug, coleccion_slug)
 );
 
-CREATE INDEX IF NOT EXISTS idx_producto_colecciones_coleccion
-  ON producto_colecciones(coleccion_slug);
+CREATE INDEX IF NOT EXISTS idx_product_collections_coleccion
+  ON product_collections(coleccion_slug);

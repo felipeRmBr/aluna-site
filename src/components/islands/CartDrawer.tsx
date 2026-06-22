@@ -49,6 +49,8 @@ export default function CartDrawer() {
             nombre: l.nombre,
             precio: l.precio,
             qty: l.qty,
+            colorCombinationId: l.colorCombinationId ?? null,
+            colorCombinationNombre: l.colorCombinationNombre ?? null,
           })),
           total,
         }),
@@ -96,7 +98,7 @@ export default function CartDrawer() {
           ) : (
             <ul class={styles.lines}>
               {lines.map((l) => (
-                <li key={l.slug} class={styles.line}>
+                <li key={l.key} class={styles.line}>
                   <img
                     class={styles.thumb}
                     src={img(l.imagen ?? '/img/placeholder.svg', { w: 180, h: 180, fit: 'cover', fm: 'webp', q: 78 })}
@@ -107,6 +109,9 @@ export default function CartDrawer() {
                     <div class={styles.itemHeader}>
                       <div class={styles.itemCopy}>
                         <span class={styles.name}>{l.nombre}</span>
+                        {l.colorCombinationNombre && (
+                          <span class={styles.price}>Color: {l.colorCombinationNombre}</span>
+                        )}
                         <span class={styles.price}>{formatMXN(l.precio)} c/u</span>
                       </div>
                       <span class={styles.lineTotal}>{formatMXN(l.precio * l.qty)}</span>
@@ -117,7 +122,7 @@ export default function CartDrawer() {
                           type="button"
                           class={styles.qtyBtn}
                           aria-label="Restar"
-                          onClick={() => setQty(l.slug, l.qty - 1)}
+                          onClick={() => setQty(l.key, l.qty - 1)}
                         >
                           −
                         </button>
@@ -126,7 +131,7 @@ export default function CartDrawer() {
                           type="button"
                           class={styles.qtyBtn}
                           aria-label="Sumar"
-                          onClick={() => setQty(l.slug, l.qty + 1)}
+                          onClick={() => setQty(l.key, l.qty + 1)}
                         >
                           +
                         </button>
@@ -134,7 +139,7 @@ export default function CartDrawer() {
                       <button
                         type="button"
                         class={styles.remove}
-                        onClick={() => removeFromCart(l.slug)}
+                        onClick={() => removeFromCart(l.key)}
                       >
                         Quitar
                       </button>

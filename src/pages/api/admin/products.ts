@@ -15,7 +15,16 @@ const Schema = z.object({
   orden: z.coerce.number().int().optional(),
   sku: z.string().max(60).optional(),
   colecciones: z.string().optional(),
+  verticalSlug: z.string().max(60).optional(),
+  colorCombinaciones: z.string().optional(),
 });
+
+const ColorCombinationSchema = z.array(z.object({
+  nombre: z.string().min(1).max(200),
+  colorIds: z.array(z.number().int().positive()).min(1).max(4),
+  orden: z.number().int().optional(),
+  activo: z.boolean().optional(),
+}));
 
 export const POST: APIRoute = async ({ request, redirect }) => {
   const form = await request.formData();
@@ -40,6 +49,10 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     .map((s) => s.trim())
     .filter(Boolean);
 
+  const colorCombinaciones = parsed.data.colorCombinaciones
+    ? ColorCombinationSchema.parse(JSON.parse(parsed.data.colorCombinaciones))
+    : [];
+
   await createProducto({
     slug,
     nombre: parsed.data.nombre.trim(),
@@ -50,6 +63,8 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     orden: parsed.data.orden ?? 0,
     sku: parsed.data.sku?.trim() || null,
     colecciones,
+    verticalSlug: parsed.data.verticalSlug?.trim() || null,
+    colorCombinaciones,
   });
 
   return redirect(`/admin/productos/${slug}?saved=1`, 303);

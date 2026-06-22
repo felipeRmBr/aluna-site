@@ -1,0 +1,47 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import AdminNav from '../../../components/AdminNav.astro';
+import { listVerticales } from '../../../lib/verticales';
+import styles from '../admin.module.css';
+
+export const prerender = false;
+
+const verticales = await listVerticales();
+---
+<BaseLayout title="Verticales — admin" showChrome={false}>
+  <div class={styles.page}>
+    <AdminNav active="verticales" />
+    <div class={styles.pageHead}>
+      <h1 class={styles.pageTitle}>Verticales</h1>
+      <a class={styles.newBtn} href="/admin/verticales/nueva">+ Nueva</a>
+    </div>
+
+    {verticales.length === 0 ? (
+      <p style="color: var(--text-muted); text-align: center; padding: var(--s-10)">
+        Aún no hay verticales. <a href="/admin/verticales/nueva" style="text-decoration: underline">Crear la primera</a>.
+      </p>
+    ) : (
+      <table class={styles.table}>
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Orden</th>
+            <th>Colores</th>
+          </tr>
+        </thead>
+        <tbody>
+          {verticales.map((v) => (
+            <tr onclick={`location.href='/admin/verticales/${v.slug}'`}>
+              <td>
+                <a href={`/admin/verticales/${v.slug}`} style="text-decoration: underline">{v.nombre}</a>
+                <div style="color: var(--text-muted); font-size: var(--fs-xs)">{v.slug}</div>
+              </td>
+              <td>{v.orden}</td>
+              <td>{v.colores.length}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )}
+  </div>
+</BaseLayout>

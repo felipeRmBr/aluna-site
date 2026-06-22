@@ -27,7 +27,15 @@ for (const f of files) {
     .map((s) => s.trim())
     .filter(Boolean);
   for (const stmt of stmts) {
-    await db.execute(stmt);
+    try {
+      await db.execute(stmt);
+    } catch (err) {
+      if (String(err?.message ?? err).includes('duplicate column name')) {
+        console.log('  skipped duplicate column');
+        continue;
+      }
+      throw err;
+    }
   }
 }
 

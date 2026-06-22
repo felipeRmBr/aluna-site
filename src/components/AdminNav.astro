@@ -1,13 +1,14 @@
 ---
 import styles from '../pages/admin/admin.module.css';
 
-type Props = { active: 'pedidos' | 'productos' | 'colecciones' };
+type Props = { active: 'pedidos' | 'productos' | 'colecciones' | 'verticales' };
 const { active } = Astro.props;
 
 const links: { id: Props['active']; label: string; href: string }[] = [
   { id: 'pedidos', label: 'Pedidos', href: '/admin/pedidos' },
   { id: 'productos', label: 'Productos', href: '/admin/productos' },
   { id: 'colecciones', label: 'Colecciones', href: '/admin/colecciones' },
+  { id: 'verticales', label: 'Verticales', href: '/admin/verticales' },
 ];
 ---
 <nav class={styles.nav}>

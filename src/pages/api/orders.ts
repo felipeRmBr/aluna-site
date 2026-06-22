@@ -10,6 +10,8 @@ const ItemSchema = z.object({
   nombre: z.string().min(1).max(200),
   precio: z.number().positive(),
   qty: z.number().int().positive().max(99),
+  colorCombinationId: z.number().int().positive().nullable().optional(),
+  colorCombinationNombre: z.string().min(1).max(200).nullable().optional(),
 });
 
 const BodySchema = z.object({

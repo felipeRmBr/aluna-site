@@ -1,0 +1,32 @@
+<script>
+  import { addToCart, openCart } from '../stores/cart';
+
+  document.addEventListener('click', (event) => {
+    const target = event.target as HTMLElement | null;
+    const btn = target?.closest<HTMLButtonElement>('[data-add-to-cart]');
+    if (!btn || btn.disabled) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const requiresColor = btn.dataset.requiresColor === 'true';
+    const colorCombinationId = btn.dataset.colorCombinationId
+      ? Number(btn.dataset.colorCombinationId)
+      : null;
+    if (requiresColor && !colorCombinationId) {
+      const message = document.querySelector<HTMLElement>('[data-color-required-message]');
+      if (message) message.hidden = false;
+      return;
+    }
+
+    addToCart({
+      slug: btn.dataset.slug!,
+      nombre: btn.dataset.nombre!,
+      precio: Number(btn.dataset.precio),
+      imagen: btn.dataset.imagen,
+      colorCombinationId,
+      colorCombinationNombre: btn.dataset.colorCombinationNombre || null,
+    });
+    openCart();
+  });
+</script>

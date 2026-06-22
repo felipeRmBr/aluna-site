@@ -8,6 +8,8 @@ export type OrderItem = {
   nombre: string;
   precio: number;
   qty: number;
+  colorCombinationId?: number | null;
+  colorCombinationNombre?: string | null;
 };
 
 export type CreateOrderInput = {
@@ -52,8 +54,18 @@ export async function createOrder(input: CreateOrderInput): Promise<string> {
 
     for (const item of input.items) {
       await tx.execute({
-        sql: `INSERT INTO order_items (order_id, slug, nombre, precio, qty) VALUES (?, ?, ?, ?, ?)`,
-        args: [id, item.slug, item.nombre, item.precio, item.qty],
+        sql: `INSERT INTO order_items
+              (order_id, slug, nombre, precio, qty, color_combination_id, color_combination_nombre)
+              VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        args: [
+          id,
+          item.slug,
+          item.nombre,
+          item.precio,
+          item.qty,
+          item.colorCombinationId ?? null,
+          item.colorCombinationNombre ?? null,
+        ],
       });
     }
 
@@ -81,7 +93,8 @@ export async function getOrder(id: string): Promise<Order | null> {
   if (!row) return null;
 
   const itemsRes = await db().execute({
-    sql: `SELECT slug, nombre, precio, qty FROM order_items WHERE order_id = ? ORDER BY rowid`,
+    sql: `SELECT slug, nombre, precio, qty, color_combination_id, color_combination_nombre
+          FROM order_items WHERE order_id = ? ORDER BY rowid`,
     args: [id],
   });
 
@@ -90,6 +103,8 @@ export async function getOrder(id: string): Promise<Order | null> {
     nombre: String(r.nombre),
     precio: Number(r.precio),
     qty: Number(r.qty),
+    colorCombinationId: r.color_combination_id ? Number(r.color_combination_id) : null,
+    colorCombinationNombre: r.color_combination_nombre ? String(r.color_combination_nombre) : null,
   }));
 
   const estado = String(row.estado) as OrderState;

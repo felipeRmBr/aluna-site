@@ -29,6 +29,7 @@ const galleryImages = producto.imagenes.map((img, i) => ({
 }));
 
 const allProductos = await listProductos();
+const activeColorCombinaciones = producto.colorCombinaciones.filter((combo) => combo.activo);
 const otrosProductos = (() => {
   const others = allProductos.filter((p) => p.slug !== producto.slug);
   const sameCollection = others.filter((p) =>
@@ -68,15 +69,53 @@ const otrosProductos = (() => {
         <div class={styles.body} set:html={descripcionHtml} />
       )}
 
+      {activeColorCombinaciones.length > 0 && (
+        <fieldset class={styles.colorPicker}>
+          <legend class={styles.colorLegend}>Color</legend>
+          <div class={styles.colorOptions}>
+            {activeColorCombinaciones.map((combo) => (
+              <label class={styles.colorOption}>
+                <input
+                  type="radio"
+                  name="color-combination"
+                  value={combo.id}
+                  data-color-combination-option
+                  data-color-combination-name={combo.nombre}
+                />
+                <span>
+                  <span class={styles.colorSwatches}>
+                    {combo.colores.map((color) => (
+                      <span
+                        class={styles.colorSwatch}
+                        style={color.hex ? `background: ${color.hex}` : undefined}
+                        title={color.nombre}
+                      >
+                        {!color.hex && color.nombre.slice(0, 1)}
+                      </span>
+                    ))}
+                  </span>
+                  <span>{combo.nombre}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+          <p class={styles.colorRequired} data-color-required-message hidden>
+            Elige una combinación de color para continuar.
+          </p>
+        </fieldset>
+      )}
+
       <button
         class={styles.addBtn}
         type="button"
         data-add-to-cart
+        data-available={producto.disponible ? 'true' : 'false'}
+        data-requires-color={activeColorCombinaciones.length > 0 ? 'true' : 'false'}
         data-slug={producto.slug}
         data-nombre={producto.nombre}
         data-precio={producto.precio}
         data-imagen={producto.imagenes[0]?.url ?? ''}
-        disabled={!producto.disponible}
+        disabled={!producto.disponible || activeColorCombinaciones.length > 0}
       >
         {producto.disponible ? 'Añadir al carrito' : 'Agotado'}
       </button>
@@ -99,6 +138,7 @@ const otrosProductos = (() => {
               precio={p.precio}
               imagen={p.imagenes[0]?.url ?? null}
               disponible={p.disponible}
+              hasColorCombinations={p.colorCombinaciones.some((combo) => combo.activo)}
             />
           ))}
         </div>
@@ -107,17 +147,16 @@ const otrosProductos = (() => {
   </article>
 </BaseLayout>
 <script>
-  import { addToCart, openCart } from '../../stores/cart';
+  const addBtn = document.querySelector<HTMLButtonElement>('[data-add-to-cart]');
+  const colorMessage = document.querySelector<HTMLElement>('[data-color-required-message]');
 
-  document.querySelectorAll<HTMLButtonElement>('[data-add-to-cart]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      addToCart({
-        slug: btn.dataset.slug!,
-        nombre: btn.dataset.nombre!,
-        precio: Number(btn.dataset.precio),
-        imagen: btn.dataset.imagen,
-      });
-      openCart();
+  document.querySelectorAll<HTMLInputElement>('[data-color-combination-option]').forEach((input) => {
+    input.addEventListener('change', () => {
+      if (!addBtn || !input.checked) return;
+      addBtn.dataset.colorCombinationId = input.value;
+      addBtn.dataset.colorCombinationNombre = input.dataset.colorCombinationName ?? '';
+      addBtn.disabled = addBtn.dataset.available !== 'true';
+      if (colorMessage) colorMessage.hidden = true;
     });
   });
 </script>

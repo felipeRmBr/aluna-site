@@ -33,6 +33,7 @@ const productos = await listProductos({ coleccion: coleccion.slug });
             precio={p.precio}
             imagen={p.imagenes[0]?.url ?? null}
             disponible={p.disponible}
+            hasColorCombinations={p.colorCombinaciones.some((combo) => combo.activo)}
           />
         ))}
       </div>

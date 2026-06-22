@@ -84,7 +84,14 @@ const steps = orderedStates.map((state, i) => ({
       <ul class={styles.itemList}>
         {order.items.map((item) => (
           <li class={styles.item}>
-            <span class={styles.itemName}>{item.nombre}</span>
+            <span class={styles.itemName}>
+              {item.nombre}
+              {item.colorCombinationNombre && (
+                <small style="display: block; color: var(--text-muted); font-size: var(--fs-xs)">
+                  Color: {item.colorCombinationNombre}
+                </small>
+              )}
+            </span>
             <span class={styles.itemQty}>×{item.qty}</span>
             <span class={styles.itemPrice}>{formatMXN(item.precio * item.qty)}</span>
           </li>

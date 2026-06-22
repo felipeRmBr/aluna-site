@@ -21,6 +21,24 @@ export type ColeccionOption = {
   nombre: string;
 };
 
+export type VerticalOption = {
+  slug: string;
+  nombre: string;
+  colores: Array<{
+    id: number;
+    nombre: string;
+    hex: string | null;
+    activo: boolean;
+  }>;
+};
+
+type ColorCombinationDraft = {
+  nombre: string;
+  colorIds: number[];
+  orden: number;
+  activo: boolean;
+};
+
 export type AdminProductInitial = {
   slug: string;
   nombre: string;
@@ -31,15 +49,18 @@ export type AdminProductInitial = {
   descripcionMd: string;
   disponible: boolean;
   colecciones: string[];
+  verticalSlug: string;
+  colorCombinaciones: ColorCombinationDraft[];
   imagenes: ImageItem[];
 };
 
 type Props = {
   initial: AdminProductInitial;
   allColecciones: ColeccionOption[];
+  allVerticales: VerticalOption[];
 };
 
-export default function AdminProductEdit({ initial, allColecciones }: Props) {
+export default function AdminProductEdit({ initial, allColecciones, allVerticales }: Props) {
   const [nombre, setNombre] = useState(initial.nombre);
   const [sku, setSku] = useState(initial.sku);
   const [precio, setPrecio] = useState(String(initial.precio));
@@ -48,6 +69,10 @@ export default function AdminProductEdit({ initial, allColecciones }: Props) {
   const [descripcionMd, setDescripcionMd] = useState(initial.descripcionMd);
   const [disponible, setDisponible] = useState(initial.disponible);
   const [colecciones, setColecciones] = useState<Set<string>>(new Set(initial.colecciones));
+  const [verticalSlug, setVerticalSlug] = useState(initial.verticalSlug);
+  const [colorCombinaciones, setColorCombinaciones] = useState<ColorCombinationDraft[]>(
+    initial.colorCombinaciones,
+  );
 
   const [images, setImages] = useState<ImageItem[]>(initial.imagenes);
   const [savingForm, setSavingForm] = useState(false);
@@ -56,6 +81,9 @@ export default function AdminProductEdit({ initial, allColecciones }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { toast, showSuccess, showError } = useToast();
+
+  const selectedVertical = allVerticales.find((v) => v.slug === verticalSlug);
+  const availableColors = selectedVertical?.colores.filter((color) => color.activo) ?? [];
 
   function toggleColeccion(slug: string) {
     setColecciones((prev) => {
@@ -78,6 +106,17 @@ export default function AdminProductEdit({ initial, allColecciones }: Props) {
         descripcionCorta,
         descripcionMd,
         colecciones: [...colecciones].join(','),
+        verticalSlug,
+        colorCombinaciones: JSON.stringify(
+          colorCombinaciones
+            .map((combo, index) => ({
+              nombre: combo.nombre.trim(),
+              orden: combo.orden || index,
+              activo: combo.activo,
+              colorIds: combo.colorIds.filter(Boolean).slice(0, 4),
+            }))
+            .filter((combo) => combo.nombre && combo.colorIds.length > 0),
+        ),
       });
       if (disponible) body.set('disponible', 'on');
 
@@ -93,6 +132,49 @@ export default function AdminProductEdit({ initial, allColecciones }: Props) {
     } finally {
       setSavingForm(false);
     }
+  }
+
+  function onVerticalChange(nextSlug: string) {
+    setVerticalSlug(nextSlug);
+    setColorCombinaciones([]);
+  }
+
+  function addColorCombination() {
+    setColorCombinaciones((prev) => [
+      ...prev,
+      {
+        nombre: '',
+        colorIds: availableColors[0] ? [availableColors[0].id] : [],
+        orden: prev.length,
+        activo: true,
+      },
+    ]);
+  }
+
+  function updateColorCombination(index: number, patch: Partial<ColorCombinationDraft>) {
+    setColorCombinaciones((prev) =>
+      prev.map((combo, i) => (i === index ? { ...combo, ...patch } : combo)),
+    );
+  }
+
+  function setComboColor(index: number, colorIndex: number, value: string) {
+    const colorId = Number(value);
+    setColorCombinaciones((prev) =>
+      prev.map((combo, i) => {
+        if (i !== index) return combo;
+        const nextIds = [...combo.colorIds];
+        if (value) nextIds[colorIndex] = colorId;
+        else nextIds.splice(colorIndex, 1);
+        return {
+          ...combo,
+          colorIds: nextIds.filter((id, idIndex, arr) => id && arr.indexOf(id) === idIndex).slice(0, 4),
+        };
+      }),
+    );
+  }
+
+  function removeColorCombination(index: number) {
+    setColorCombinaciones((prev) => prev.filter((_, i) => i !== index));
   }
 
   function onFilesPicked(e: JSX.TargetedEvent<HTMLInputElement>) {
@@ -301,6 +383,134 @@ export default function AdminProductEdit({ initial, allColecciones }: Props) {
             />
             <span>Disponible en el catálogo</span>
           </label>
+        </div>
+
+        <label class={styles.metaItem}>
+          <span class={styles.metaLabel}>Vertical</span>
+          <select
+            class={styles.textInput}
+            value={verticalSlug}
+            onChange={(e) => onVerticalChange((e.target as HTMLSelectElement).value)}
+          >
+            <option value="">Sin vertical / sin colores</option>
+            {allVerticales.map((v) => (
+              <option key={v.slug} value={v.slug}>{v.nombre}</option>
+            ))}
+          </select>
+        </label>
+
+        <div class={styles.sectionBox}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 'var(--s-3)', alignItems: 'center' }}>
+            <div>
+              <span class={styles.sectionTitleSm}>Combinaciones de color</span>
+              <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-sm)', marginTop: 'var(--s-1)' }}>
+                Define las opciones exactas que el cliente podrá elegir. Cada opción acepta hasta 4 colores.
+              </p>
+            </div>
+            <button
+              type="button"
+              class={styles.iconBtn}
+              onClick={addColorCombination}
+              disabled={!selectedVertical || availableColors.length === 0}
+            >
+              + Agregar
+            </button>
+          </div>
+
+          {!selectedVertical ? (
+            <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-sm)' }}>
+              Selecciona una vertical para configurar colores.
+            </p>
+          ) : availableColors.length === 0 ? (
+            <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-sm)' }}>
+              Esta vertical no tiene colores activos todavía.
+            </p>
+          ) : colorCombinaciones.length === 0 ? (
+            <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-sm)' }}>
+              Sin combinaciones. El producto se venderá sin selección de color.
+            </p>
+          ) : (
+            <div style={{ display: 'grid', gap: 'var(--s-4)', marginTop: 'var(--s-4)' }}>
+              {colorCombinaciones.map((combo, index) => (
+                <div
+                  key={index}
+                  style={{
+                    border: '1px solid var(--line)',
+                    borderRadius: 'var(--r-md)',
+                    padding: 'var(--s-4)',
+                    display: 'grid',
+                    gap: 'var(--s-3)',
+                  }}
+                >
+                  <div class={styles.fieldRow}>
+                    <label class={styles.metaItem}>
+                      <span class={styles.metaLabel}>Nombre de combinación</span>
+                      <input
+                        class={styles.textInput}
+                        type="text"
+                        maxLength={200}
+                        value={combo.nombre}
+                        onInput={(e) => updateColorCombination(index, {
+                          nombre: (e.target as HTMLInputElement).value,
+                        })}
+                        placeholder="Blanco + Negro"
+                      />
+                    </label>
+                    <label class={styles.metaItem}>
+                      <span class={styles.metaLabel}>Orden</span>
+                      <input
+                        class={styles.textInput}
+                        type="number"
+                        step={1}
+                        value={combo.orden}
+                        onInput={(e) => updateColorCombination(index, {
+                          orden: Number((e.target as HTMLInputElement).value),
+                        })}
+                      />
+                    </label>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 'var(--s-3)' }}>
+                    {[0, 1, 2, 3].map((colorIndex) => (
+                      <label class={styles.metaItem} key={colorIndex}>
+                        <span class={styles.metaLabel}>Color {colorIndex + 1}</span>
+                        <select
+                          class={styles.textInput}
+                          value={combo.colorIds[colorIndex] ?? ''}
+                          onChange={(e) => setComboColor(index, colorIndex, (e.target as HTMLSelectElement).value)}
+                        >
+                          <option value="">{colorIndex === 0 ? 'Elige un color' : 'Sin color'}</option>
+                          {availableColors.map((color) => (
+                            <option key={color.id} value={color.id}>{color.nombre}</option>
+                          ))}
+                        </select>
+                      </label>
+                    ))}
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 'var(--s-3)', alignItems: 'center' }}>
+                    <label class={styles.checkboxField}>
+                      <input
+                        type="checkbox"
+                        checked={combo.activo}
+                        onChange={(e) => updateColorCombination(index, {
+                          activo: (e.target as HTMLInputElement).checked,
+                        })}
+                      />
+                      <span>Disponible para compra</span>
+                    </label>
+                    <button
+                      type="button"
+                      class={`${styles.iconBtn} ${styles.iconBtnDanger}`}
+                      onClick={() => removeColorCombination(index)}
+                    >
+                      Quitar
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <fieldset class={styles.metaItem} style={{ border: 0, padding: 0, margin: 0 }}>

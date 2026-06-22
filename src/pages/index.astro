@@ -53,6 +53,7 @@ const destacados = productos.slice(0, 6);
           precio={p.precio}
           imagen={p.imagenes[0]?.url ?? null}
           disponible={p.disponible}
+          hasColorCombinations={p.colorCombinaciones.some((combo) => combo.activo)}
         />
       ))}
     </div>

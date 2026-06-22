@@ -4,6 +4,7 @@ import AdminNav from '../../../components/AdminNav.astro';
 import AdminProductEdit from '../../../components/islands/AdminProductEdit.tsx';
 import { getProducto } from '../../../lib/products';
 import { listColecciones } from '../../../lib/colecciones';
+import { listVerticales } from '../../../lib/verticales';
 import styles from '../admin.module.css';
 
 export const prerender = false;
@@ -12,7 +13,10 @@ const { slug } = Astro.params;
 const producto = slug ? await getProducto(slug) : null;
 if (!producto) return new Response('No encontrado', { status: 404 });
 
-const allColecciones = await listColecciones();
+const [allColecciones, allVerticales] = await Promise.all([
+  listColecciones(),
+  listVerticales(),
+]);
 
 const initial = {
   slug: producto.slug,
@@ -24,10 +28,27 @@ const initial = {
   descripcionMd: producto.descripcionMd ?? '',
   disponible: producto.disponible,
   colecciones: producto.colecciones,
+  verticalSlug: producto.verticalSlug ?? '',
+  colorCombinaciones: producto.colorCombinaciones.map((combo) => ({
+    nombre: combo.nombre,
+    orden: combo.orden,
+    activo: combo.activo,
+    colorIds: combo.colores.map((color) => color.id),
+  })),
   imagenes: producto.imagenes.map((i) => ({ id: i.id, url: i.url, orden: i.orden })),
 };
 
 const colOptions = allColecciones.map((c) => ({ slug: c.slug, nombre: c.nombre }));
+const verticalOptions = allVerticales.map((v) => ({
+  slug: v.slug,
+  nombre: v.nombre,
+  colores: v.colores.map((color) => ({
+    id: color.id,
+    nombre: color.nombre,
+    hex: color.hex,
+    activo: color.activo,
+  })),
+}));
 ---
 <BaseLayout title={`${producto.nombre} — admin`} showChrome={false}>
   <div class={styles.page}>
@@ -38,6 +59,6 @@ const colOptions = allColecciones.map((c) => ({ slug: c.slug, nombre: c.nombre }
       <span style="color: var(--text-muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: var(--fs-sm)">/{producto.slug}</span>
     </div>
 
-    <AdminProductEdit client:load initial={initial} allColecciones={colOptions} />
+    <AdminProductEdit client:load initial={initial} allColecciones={colOptions} allVerticales={verticalOptions} />
   </div>
 </BaseLayout>

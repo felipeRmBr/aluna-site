@@ -28,6 +28,12 @@
   transform: scale(1.03);
 }
 
+.mediaLink {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
 .body {
   padding: var(--s-4);
   display: flex;
@@ -40,11 +46,35 @@
   font-size: var(--fs-md);
   letter-spacing: 0.04em;
   color: var(--text);
+  text-decoration: none;
+}
+.name:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .price {
   font-size: var(--fs-sm);
   color: var(--text-muted);
+}
+
+.addBtn {
+  margin-top: var(--s-1);
+  padding: var(--s-2) var(--s-4);
+  background: var(--color-tinta);
+  color: var(--bg-elev);
+  border-radius: var(--r-pill);
+  font-size: 10px;
+  letter-spacing: var(--tracking-wide);
+  text-align: center;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: background var(--dur) var(--easing);
+}
+.addBtn:hover:not(:disabled) { background: #000; }
+.addBtn:disabled {
+  background: var(--color-piedra);
+  cursor: not-allowed;
 }
 
 .soldOut {

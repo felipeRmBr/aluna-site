@@ -22,6 +22,7 @@ const productos = await listProductos();
           precio={p.precio}
           imagen={p.imagenes[0]?.url ?? null}
           disponible={p.disponible}
+          hasColorCombinations={p.colorCombinaciones.some((combo) => combo.activo)}
         />
       ))}
     </div>

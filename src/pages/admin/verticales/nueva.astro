@@ -1,0 +1,72 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import AdminNav from '../../../components/AdminNav.astro';
+import styles from '../admin.module.css';
+
+export const prerender = false;
+
+const error = Astro.url.searchParams.get('error');
+const errorMsg =
+  error === 'slug-taken' ? 'Ya existe una vertical con ese identificador.' :
+  error === 'slug-invalid' ? 'El identificador no es válido (usa solo letras, números y guiones).' :
+  null;
+---
+<BaseLayout title="Nueva vertical — admin" showChrome={false}>
+  <div class={styles.page}>
+    <AdminNav active="verticales" />
+    <a class={styles.back} href="/admin/verticales">← Volver</a>
+    <div class={styles.pageHead}>
+      <h1 class={styles.pageTitle}>Nueva vertical</h1>
+    </div>
+
+    {errorMsg && <p class:list={[styles.flash, styles.flashError]}>{errorMsg}</p>}
+
+    <form class={styles.editForm} method="POST" action="/api/admin/verticales">
+      <div class={styles.fieldRow}>
+        <label class={styles.metaItem}>
+          <span class={styles.metaLabel}>Nombre</span>
+          <input class={styles.textInput} type="text" name="nombre" id="nombre" required maxlength="120" autofocus />
+        </label>
+        <label class={styles.metaItem}>
+          <span class={styles.metaLabel}>Identificador (URL)</span>
+          <input
+            class={styles.textInput}
+            type="text"
+            name="slug"
+            id="slug"
+            required
+            pattern="[a-z0-9][a-z0-9\-]*[a-z0-9]"
+            minlength="2"
+            maxlength="60"
+          />
+          <span class={styles.slugHint}>/admin/verticales/<span id="slug-preview">…</span></span>
+        </label>
+      </div>
+
+      <label class={styles.metaItem}>
+        <span class={styles.metaLabel}>Orden</span>
+        <input class={styles.textInput} type="number" name="orden" value="0" step="1" />
+      </label>
+
+      <button type="submit" class={styles.save}>Crear vertical</button>
+    </form>
+  </div>
+</BaseLayout>
+
+<script>
+  function slugify(s: string): string {
+    return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60);
+  }
+  const nombre = document.getElementById('nombre') as HTMLInputElement | null;
+  const slug = document.getElementById('slug') as HTMLInputElement | null;
+  const slugPreview = document.getElementById('slug-preview');
+  let slugTouched = false;
+  slug?.addEventListener('input', () => { slugTouched = true; if (slugPreview) slugPreview.textContent = slug.value || '…'; });
+  nombre?.addEventListener('input', () => {
+    if (!slugTouched && slug) {
+      slug.value = slugify(nombre.value);
+      if (slugPreview) slugPreview.textContent = slug.value || '…';
+    }
+  });
+</script>

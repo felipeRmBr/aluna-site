@@ -9,18 +9,37 @@ type Props = {
   precio: number;
   imagen: string | null | undefined;
   disponible?: boolean;
+  hasColorCombinations?: boolean;
 };
 
-const { slug, nombre, precio, imagen, disponible = true } = Astro.props;
+const { slug, nombre, precio, imagen, disponible = true, hasColorCombinations = false } = Astro.props;
 const src = imagen ? img(imagen, { w: 600, fit: 'cover', fm: 'webp', q: 80 }) : null;
 ---
-<a class={styles.card} href={`/productos/${slug}`}>
-  <div class={styles.media}>
-    {src && <img class={styles.img} src={src} alt={nombre} loading="lazy" />}
-    {!disponible && <span class={styles.soldOut}>Agotado</span>}
-  </div>
+<article class={styles.card}>
+  <a class={styles.mediaLink} href={`/productos/${slug}`}>
+    <div class={styles.media}>
+      {src && <img class={styles.img} src={src} alt={nombre} loading="lazy" />}
+      {!disponible && <span class={styles.soldOut}>Agotado</span>}
+    </div>
+  </a>
   <div class={styles.body}>
-    <span class={styles.name}>{nombre}</span>
+    <a class={styles.name} href={`/productos/${slug}`}>{nombre}</a>
     <span class={styles.price}>{formatMXN(precio)}</span>
+    {hasColorCombinations ? (
+      <a class={styles.addBtn} href={`/productos/${slug}`}>Elegir color</a>
+    ) : (
+      <button
+        class={styles.addBtn}
+        type="button"
+        data-add-to-cart
+        data-slug={slug}
+        data-nombre={nombre}
+        data-precio={precio}
+        data-imagen={imagen ?? ''}
+        disabled={!disponible}
+      >
+        {disponible ? 'Añadir al carrito' : 'Agotado'}
+      </button>
+    )}
   </div>
-</a>
+</article>

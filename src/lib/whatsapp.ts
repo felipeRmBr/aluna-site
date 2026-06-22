@@ -1,9 +1,15 @@
 import { formatMXN } from './money';
-import type { CartLine } from '../stores/cart';
+
+export type WhatsappLine = {
+  nombre: string;
+  precio: number;
+  qty: number;
+  colorCombinationNombre?: string | null;
+};
 
 export type WhatsappArgs = {
   phone: string;
-  lines: CartLine[];
+  lines: WhatsappLine[];
   total: number;
   ordenId: string;
   siteUrl: string;
@@ -11,7 +17,10 @@ export type WhatsappArgs = {
 
 export function buildWhatsappUrl({ phone, lines, total, ordenId, siteUrl }: WhatsappArgs): string {
   const lineas = lines
-    .map((l) => `• ${l.nombre} ×${l.qty} — ${formatMXN(l.precio * l.qty)}`)
+    .map((l) => {
+      const color = l.colorCombinationNombre ? ` (${l.colorCombinationNombre})` : '';
+      return `• ${l.nombre}${color} ×${l.qty} — ${formatMXN(l.precio * l.qty)}`;
+    })
     .join('\n');
 
   const url = `${siteUrl.replace(/\/$/, '')}/pedido/${ordenId}`;

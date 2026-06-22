@@ -50,7 +50,7 @@ export async function listColecciones(opts: { destacadasOnly?: boolean } = {}): 
   const res = await db().execute({
     sql: `SELECT slug, nombre, descripcion, descripcion_md, hero, orden, destacada,
                  created_at, updated_at
-          FROM colecciones
+          FROM collections
           ${where}
           ORDER BY orden ASC, nombre ASC`,
     args: [],
@@ -62,7 +62,7 @@ export async function getColeccion(slug: string): Promise<Coleccion | null> {
   const res = await db().execute({
     sql: `SELECT slug, nombre, descripcion, descripcion_md, hero, orden, destacada,
                  created_at, updated_at
-          FROM colecciones WHERE slug = ?`,
+          FROM collections WHERE slug = ?`,
     args: [slug],
   });
   const row = res.rows[0];
@@ -72,7 +72,7 @@ export async function getColeccion(slug: string): Promise<Coleccion | null> {
 export async function createColeccion(input: CreateColeccionInput): Promise<void> {
   const now = new Date().toISOString();
   await db().execute({
-    sql: `INSERT INTO colecciones
+    sql: `INSERT INTO collections
           (slug, nombre, descripcion, descripcion_md, hero, orden, destacada, created_at, updated_at)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     args: [
@@ -107,21 +107,21 @@ export async function updateColeccion(slug: string, input: UpdateColeccionInput)
   args.push(slug);
 
   await db().execute({
-    sql: `UPDATE colecciones SET ${sets.join(', ')} WHERE slug = ?`,
+    sql: `UPDATE collections SET ${sets.join(', ')} WHERE slug = ?`,
     args,
   });
 }
 
 export async function deleteColeccion(slug: string): Promise<void> {
   await db().execute({
-    sql: `DELETE FROM colecciones WHERE slug = ?`,
+    sql: `DELETE FROM collections WHERE slug = ?`,
     args: [slug],
   });
 }
 
 export async function coleccionSlugExists(slug: string): Promise<boolean> {
   const res = await db().execute({
-    sql: `SELECT 1 FROM colecciones WHERE slug = ? LIMIT 1`,
+    sql: `SELECT 1 FROM collections WHERE slug = ? LIMIT 1`,
     args: [slug],
   });
   return res.rows.length > 0;

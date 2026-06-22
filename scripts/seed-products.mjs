@@ -61,7 +61,7 @@ async function seedColecciones() {
     const raw = await readFile(join(dir, f), 'utf8');
     const { data, body } = parseFrontmatter(raw);
     const existing = await db.execute({
-      sql: `SELECT 1 FROM colecciones WHERE slug = ?`,
+      sql: `SELECT 1 FROM collections WHERE slug = ?`,
       args: [slug],
     });
     if (existing.rows.length > 0) {
@@ -69,7 +69,7 @@ async function seedColecciones() {
       continue;
     }
     await db.execute({
-      sql: `INSERT INTO colecciones
+      sql: `INSERT INTO collections
             (slug, nombre, descripcion, descripcion_md, hero, orden, destacada, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       args: [
@@ -100,7 +100,7 @@ async function seedProductos() {
     const raw = await readFile(join(dir, f), 'utf8');
     const { data, body } = parseFrontmatter(raw);
     const existing = await db.execute({
-      sql: `SELECT 1 FROM productos WHERE slug = ?`,
+      sql: `SELECT 1 FROM products WHERE slug = ?`,
       args: [slug],
     });
     if (existing.rows.length > 0) {
@@ -108,7 +108,7 @@ async function seedProductos() {
       continue;
     }
     await db.execute({
-      sql: `INSERT INTO productos
+      sql: `INSERT INTO products
             (slug, nombre, precio, descripcion_corta, descripcion_md,
              disponible, orden, sku, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -127,13 +127,13 @@ async function seedProductos() {
     });
     for (let i = 0; i < (data.imagenes ?? []).length; i++) {
       await db.execute({
-        sql: `INSERT INTO producto_imagenes (producto_slug, url, blob_key, orden) VALUES (?, ?, ?, ?)`,
+        sql: `INSERT INTO product_images (producto_slug, url, blob_key, orden) VALUES (?, ?, ?, ?)`,
         args: [slug, data.imagenes[i], null, i],
       });
     }
     for (const col of data.colecciones ?? []) {
       await db.execute({
-        sql: `INSERT OR IGNORE INTO producto_colecciones (producto_slug, coleccion_slug) VALUES (?, ?)`,
+        sql: `INSERT OR IGNORE INTO product_collections (producto_slug, coleccion_slug) VALUES (?, ?)`,
         args: [slug, col],
       });
     }
