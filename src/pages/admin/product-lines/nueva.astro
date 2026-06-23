@@ -7,21 +7,21 @@ export const prerender = false;
 
 const error = Astro.url.searchParams.get('error');
 const errorMsg =
-  error === 'slug-taken' ? 'Ya existe una vertical con ese identificador.' :
+  error === 'slug-taken' ? 'Ya existe una línea de producto con ese identificador.' :
   error === 'slug-invalid' ? 'El identificador no es válido (usa solo letras, números y guiones).' :
   null;
 ---
-<BaseLayout title="Nueva vertical — admin" showChrome={false}>
+<BaseLayout title="Nueva línea de producto — admin" showChrome={false}>
   <div class={styles.page}>
-    <AdminNav active="verticales" />
-    <a class={styles.back} href="/admin/verticales">← Volver</a>
+    <AdminNav active="product-lines" />
+    <a class={styles.back} href="/admin/product-lines">← Volver</a>
     <div class={styles.pageHead}>
-      <h1 class={styles.pageTitle}>Nueva vertical</h1>
+      <h1 class={styles.pageTitle}>Nueva línea de producto</h1>
     </div>
 
     {errorMsg && <p class:list={[styles.flash, styles.flashError]}>{errorMsg}</p>}
 
-    <form class={styles.editForm} method="POST" action="/api/admin/verticales">
+    <form class={styles.editForm} method="POST" action="/api/admin/product-lines">
       <div class={styles.fieldRow}>
         <label class={styles.metaItem}>
           <span class={styles.metaLabel}>Nombre</span>
@@ -39,7 +39,7 @@ const errorMsg =
             minlength="2"
             maxlength="60"
           />
-          <span class={styles.slugHint}>/admin/verticales/<span id="slug-preview">…</span></span>
+          <span class={styles.slugHint}>/admin/product-lines/<span id="slug-preview">…</span></span>
         </label>
       </div>
 
@@ -48,7 +48,7 @@ const errorMsg =
         <input class={styles.textInput} type="number" name="orden" value="0" step="1" />
       </label>
 
-      <button type="submit" class={styles.save}>Crear vertical</button>
+      <button type="submit" class={styles.save}>Crear línea de producto</button>
     </form>
   </div>
 </BaseLayout>

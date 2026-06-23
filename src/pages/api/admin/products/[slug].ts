@@ -14,7 +14,7 @@ const Schema = z.object({
   orden: z.coerce.number().int().optional(),
   sku: z.string().max(60).optional(),
   colecciones: z.string().optional(),
-  verticalSlug: z.string().max(60).optional(),
+  productLineSlug: z.string().max(60).optional(),
   colorCombinaciones: z.string().optional(),
 });
 
@@ -59,7 +59,7 @@ export const POST: APIRoute = async ({ params, request, redirect }) => {
     orden: parsed.data.orden ?? 0,
     sku: parsed.data.sku?.trim() || null,
     colecciones,
-    verticalSlug: parsed.data.verticalSlug?.trim() || null,
+    productLineSlug: parsed.data.productLineSlug?.trim() || null,
     colorCombinaciones,
   });
 

@@ -4,7 +4,7 @@ import AdminNav from '../../../components/AdminNav.astro';
 import AdminProductEdit from '../../../components/islands/AdminProductEdit.tsx';
 import { getProducto } from '../../../lib/products';
 import { listColecciones } from '../../../lib/colecciones';
-import { listVerticales } from '../../../lib/verticales';
+import { listProductLines } from '../../../lib/productLines';
 import styles from '../admin.module.css';
 
 export const prerender = false;
@@ -13,9 +13,9 @@ const { slug } = Astro.params;
 const producto = slug ? await getProducto(slug) : null;
 if (!producto) return new Response('No encontrado', { status: 404 });
 
-const [allColecciones, allVerticales] = await Promise.all([
+const [allColecciones, allProductLines] = await Promise.all([
   listColecciones(),
-  listVerticales(),
+  listProductLines(),
 ]);
 
 const initial = {
@@ -28,7 +28,7 @@ const initial = {
   descripcionMd: producto.descripcionMd ?? '',
   disponible: producto.disponible,
   colecciones: producto.colecciones,
-  verticalSlug: producto.verticalSlug ?? '',
+  productLineSlug: producto.productLineSlug ?? '',
   colorCombinaciones: producto.colorCombinaciones.map((combo) => ({
     nombre: combo.nombre,
     orden: combo.orden,
@@ -39,7 +39,7 @@ const initial = {
 };
 
 const colOptions = allColecciones.map((c) => ({ slug: c.slug, nombre: c.nombre }));
-const verticalOptions = allVerticales.map((v) => ({
+const productLineOptions = allProductLines.map((v) => ({
   slug: v.slug,
   nombre: v.nombre,
   colores: v.colores.map((color) => ({
@@ -59,6 +59,6 @@ const verticalOptions = allVerticales.map((v) => ({
       <span style="color: var(--text-muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: var(--fs-sm)">/{producto.slug}</span>
     </div>
 
-    <AdminProductEdit client:load initial={initial} allColecciones={colOptions} allVerticales={verticalOptions} />
+    <AdminProductEdit client:load initial={initial} allColecciones={colOptions} allProductLines={productLineOptions} />
   </div>
 </BaseLayout>

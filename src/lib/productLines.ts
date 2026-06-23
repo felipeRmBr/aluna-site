@@ -1,8 +1,8 @@
 import { db } from './db';
 
-export type VerticalColor = {
+export type ProductLineColor = {
   id: number;
-  verticalSlug: string;
+  productLineSlug: string;
   nombre: string;
   hex: string | null;
   orden: number;
@@ -11,44 +11,44 @@ export type VerticalColor = {
   updatedAt: string;
 };
 
-export type Vertical = {
+export type ProductLine = {
   slug: string;
   nombre: string;
   orden: number;
   createdAt: string;
   updatedAt: string;
-  colores: VerticalColor[];
+  colores: ProductLineColor[];
 };
 
-export type CreateVerticalInput = {
+export type CreateProductLineInput = {
   slug: string;
   nombre: string;
   orden?: number;
 };
 
-export type UpdateVerticalInput = {
+export type UpdateProductLineInput = {
   nombre?: string;
   orden?: number;
 };
 
-export type CreateVerticalColorInput = {
+export type CreateProductLineColorInput = {
   nombre: string;
   hex?: string | null;
   orden?: number;
   activo?: boolean;
 };
 
-export type UpdateVerticalColorInput = {
+export type UpdateProductLineColorInput = {
   nombre?: string;
   hex?: string | null;
   orden?: number;
   activo?: boolean;
 };
 
-function rowToColor(r: Record<string, unknown>): VerticalColor {
+function rowToColor(r: Record<string, unknown>): ProductLineColor {
   return {
     id: Number(r.id),
-    verticalSlug: String(r.vertical_slug),
+    productLineSlug: String(r.product_line_slug),
     nombre: String(r.nombre),
     hex: r.hex ? String(r.hex) : null,
     orden: Number(r.orden),
@@ -58,7 +58,7 @@ function rowToColor(r: Record<string, unknown>): VerticalColor {
   };
 }
 
-function rowToVertical(r: Record<string, unknown>, colores: VerticalColor[] = []): Vertical {
+function rowToProductLine(r: Record<string, unknown>, colores: ProductLineColor[] = []): ProductLine {
   return {
     slug: String(r.slug),
     nombre: String(r.nombre),
@@ -69,10 +69,10 @@ function rowToVertical(r: Record<string, unknown>, colores: VerticalColor[] = []
   };
 }
 
-export async function listVerticales(): Promise<Vertical[]> {
+export async function listProductLines(): Promise<ProductLine[]> {
   const res = await db().execute({
     sql: `SELECT slug, nombre, orden, created_at, updated_at
-          FROM product_verticals
+          FROM product_lines
           ORDER BY orden ASC, nombre ASC`,
     args: [],
   });
@@ -81,45 +81,45 @@ export async function listVerticales(): Promise<Vertical[]> {
   const slugs = res.rows.map((r) => String(r.slug));
   const placeholders = slugs.map(() => '?').join(',');
   const colorsRes = await db().execute({
-    sql: `SELECT id, vertical_slug, nombre, hex, orden, activo, created_at, updated_at
-          FROM vertical_colors
-          WHERE vertical_slug IN (${placeholders})
+    sql: `SELECT id, product_line_slug, nombre, hex, orden, activo, created_at, updated_at
+          FROM product_line_colors
+          WHERE product_line_slug IN (${placeholders})
           ORDER BY orden ASC, nombre ASC`,
     args: slugs,
   });
 
-  const colorsByVertical = new Map<string, VerticalColor[]>();
+  const colorsByProductLine = new Map<string, ProductLineColor[]>();
   for (const r of colorsRes.rows) {
     const color = rowToColor(r);
-    const arr = colorsByVertical.get(color.verticalSlug) ?? [];
+    const arr = colorsByProductLine.get(color.productLineSlug) ?? [];
     arr.push(color);
-    colorsByVertical.set(color.verticalSlug, arr);
+    colorsByProductLine.set(color.productLineSlug, arr);
   }
 
-  return res.rows.map((r) => rowToVertical(r, colorsByVertical.get(String(r.slug)) ?? []));
+  return res.rows.map((r) => rowToProductLine(r, colorsByProductLine.get(String(r.slug)) ?? []));
 }
 
-export async function getVertical(slug: string): Promise<Vertical | null> {
+export async function getProductLine(slug: string): Promise<ProductLine | null> {
   const res = await db().execute({
     sql: `SELECT slug, nombre, orden, created_at, updated_at
-          FROM product_verticals WHERE slug = ?`,
+          FROM product_lines WHERE slug = ?`,
     args: [slug],
   });
   const row = res.rows[0];
   if (!row) return null;
-  return rowToVertical(row, await listVerticalColors(slug, { includeInactive: true }));
+  return rowToProductLine(row, await listProductLineColors(slug, { includeInactive: true }));
 }
 
-export async function createVertical(input: CreateVerticalInput): Promise<void> {
+export async function createProductLine(input: CreateProductLineInput): Promise<void> {
   const now = new Date().toISOString();
   await db().execute({
-    sql: `INSERT INTO product_verticals (slug, nombre, orden, created_at, updated_at)
+    sql: `INSERT INTO product_lines (slug, nombre, orden, created_at, updated_at)
           VALUES (?, ?, ?, ?, ?)`,
     args: [input.slug, input.nombre, input.orden ?? 0, now, now],
   });
 }
 
-export async function updateVertical(slug: string, input: UpdateVerticalInput): Promise<void> {
+export async function updateProductLine(slug: string, input: UpdateProductLineInput): Promise<void> {
   const sets: string[] = [];
   const args: (string | number)[] = [];
   if (input.nombre !== undefined) { sets.push('nombre = ?'); args.push(input.nombre); }
@@ -129,49 +129,49 @@ export async function updateVertical(slug: string, input: UpdateVerticalInput): 
   args.push(new Date().toISOString());
   args.push(slug);
   await db().execute({
-    sql: `UPDATE product_verticals SET ${sets.join(', ')} WHERE slug = ?`,
+    sql: `UPDATE product_lines SET ${sets.join(', ')} WHERE slug = ?`,
     args,
   });
 }
 
-export async function deleteVertical(slug: string): Promise<void> {
-  await db().execute({ sql: `DELETE FROM product_verticals WHERE slug = ?`, args: [slug] });
+export async function deleteProductLine(slug: string): Promise<void> {
+  await db().execute({ sql: `DELETE FROM product_lines WHERE slug = ?`, args: [slug] });
 }
 
-export async function verticalSlugExists(slug: string): Promise<boolean> {
+export async function productLineSlugExists(slug: string): Promise<boolean> {
   const res = await db().execute({
-    sql: `SELECT 1 FROM product_verticals WHERE slug = ? LIMIT 1`,
+    sql: `SELECT 1 FROM product_lines WHERE slug = ? LIMIT 1`,
     args: [slug],
   });
   return res.rows.length > 0;
 }
 
-export async function listVerticalColors(
-  verticalSlug: string,
+export async function listProductLineColors(
+  productLineSlug: string,
   opts: { includeInactive?: boolean } = {},
-): Promise<VerticalColor[]> {
+): Promise<ProductLineColor[]> {
   const where = opts.includeInactive ? '' : 'AND activo = 1';
   const res = await db().execute({
-    sql: `SELECT id, vertical_slug, nombre, hex, orden, activo, created_at, updated_at
-          FROM vertical_colors
-          WHERE vertical_slug = ? ${where}
+    sql: `SELECT id, product_line_slug, nombre, hex, orden, activo, created_at, updated_at
+          FROM product_line_colors
+          WHERE product_line_slug = ? ${where}
           ORDER BY orden ASC, nombre ASC`,
-    args: [verticalSlug],
+    args: [productLineSlug],
   });
   return res.rows.map(rowToColor);
 }
 
-export async function createVerticalColor(
-  verticalSlug: string,
-  input: CreateVerticalColorInput,
+export async function createProductLineColor(
+  productLineSlug: string,
+  input: CreateProductLineColorInput,
 ): Promise<number> {
   const now = new Date().toISOString();
   const res = await db().execute({
-    sql: `INSERT INTO vertical_colors
-          (vertical_slug, nombre, hex, orden, activo, created_at, updated_at)
+    sql: `INSERT INTO product_line_colors
+          (product_line_slug, nombre, hex, orden, activo, created_at, updated_at)
           VALUES (?, ?, ?, ?, ?, ?, ?)`,
     args: [
-      verticalSlug,
+      productLineSlug,
       input.nombre,
       input.hex ?? null,
       input.orden ?? 0,
@@ -183,9 +183,9 @@ export async function createVerticalColor(
   return Number(res.lastInsertRowid);
 }
 
-export async function updateVerticalColor(
+export async function updateProductLineColor(
   id: number,
-  input: UpdateVerticalColorInput,
+  input: UpdateProductLineColorInput,
 ): Promise<void> {
   const sets: string[] = [];
   const args: (string | number | null)[] = [];
@@ -198,11 +198,11 @@ export async function updateVerticalColor(
   args.push(new Date().toISOString());
   args.push(id);
   await db().execute({
-    sql: `UPDATE vertical_colors SET ${sets.join(', ')} WHERE id = ?`,
+    sql: `UPDATE product_line_colors SET ${sets.join(', ')} WHERE id = ?`,
     args,
   });
 }
 
-export async function deleteVerticalColor(id: number): Promise<void> {
-  await db().execute({ sql: `DELETE FROM vertical_colors WHERE id = ?`, args: [id] });
+export async function deleteProductLineColor(id: number): Promise<void> {
+  await db().execute({ sql: `DELETE FROM product_line_colors WHERE id = ?`, args: [id] });
 }

@@ -1,24 +1,24 @@
 ---
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import AdminNav from '../../../components/AdminNav.astro';
-import { listVerticales } from '../../../lib/verticales';
+import { listProductLines } from '../../../lib/productLines';
 import styles from '../admin.module.css';
 
 export const prerender = false;
 
-const verticales = await listVerticales();
+const productLines = await listProductLines();
 ---
-<BaseLayout title="Verticales — admin" showChrome={false}>
+<BaseLayout title="Líneas de producto — admin" showChrome={false}>
   <div class={styles.page}>
-    <AdminNav active="verticales" />
+    <AdminNav active="product-lines" />
     <div class={styles.pageHead}>
-      <h1 class={styles.pageTitle}>Verticales</h1>
-      <a class={styles.newBtn} href="/admin/verticales/nueva">+ Nueva</a>
+      <h1 class={styles.pageTitle}>Líneas de producto</h1>
+      <a class={styles.newBtn} href="/admin/product-lines/nueva">+ Nueva</a>
     </div>
 
-    {verticales.length === 0 ? (
+    {productLines.length === 0 ? (
       <p style="color: var(--text-muted); text-align: center; padding: var(--s-10)">
-        Aún no hay verticales. <a href="/admin/verticales/nueva" style="text-decoration: underline">Crear la primera</a>.
+        Aún no hay líneas de producto. <a href="/admin/product-lines/nueva" style="text-decoration: underline">Crear la primera</a>.
       </p>
     ) : (
       <table class={styles.table}>
@@ -30,10 +30,10 @@ const verticales = await listVerticales();
           </tr>
         </thead>
         <tbody>
-          {verticales.map((v) => (
-            <tr onclick={`location.href='/admin/verticales/${v.slug}'`}>
+          {productLines.map((v) => (
+            <tr onclick={`location.href='/admin/product-lines/${v.slug}'`}>
               <td>
-                <a href={`/admin/verticales/${v.slug}`} style="text-decoration: underline">{v.nombre}</a>
+                <a href={`/admin/product-lines/${v.slug}`} style="text-decoration: underline">{v.nombre}</a>
                 <div style="color: var(--text-muted); font-size: var(--fs-xs)">{v.slug}</div>
               </td>
               <td>{v.orden}</td>

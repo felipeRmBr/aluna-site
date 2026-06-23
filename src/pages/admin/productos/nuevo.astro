@@ -2,13 +2,13 @@
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import AdminNav from '../../../components/AdminNav.astro';
 import { listColecciones } from '../../../lib/colecciones';
-import { listVerticales } from '../../../lib/verticales';
+import { listProductLines } from '../../../lib/productLines';
 import styles from '../admin.module.css';
 
 export const prerender = false;
 
 const colecciones = await listColecciones();
-const verticales = await listVerticales();
+const productLines = await listProductLines();
 const error = Astro.url.searchParams.get('error');
 const errorMsg =
   error === 'slug-taken' ? 'Ya existe un producto con ese identificador.' :
@@ -58,10 +58,10 @@ const errorMsg =
       </div>
 
       <label class={styles.metaItem}>
-        <span class={styles.metaLabel}>Vertical</span>
-        <select class={styles.textInput} name="verticalSlug">
-          <option value="">Sin vertical / sin colores</option>
-          {verticales.map((v) => (
+        <span class={styles.metaLabel}>Línea de producto</span>
+        <select class={styles.textInput} name="productLineSlug">
+          <option value="">Sin línea de producto / sin colores</option>
+          {productLines.map((v) => (
             <option value={v.slug}>{v.nombre}</option>
           ))}
         </select>

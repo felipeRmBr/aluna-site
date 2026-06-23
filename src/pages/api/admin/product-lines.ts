@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { z } from 'astro:content';
-import { createVertical, verticalSlugExists } from '../../../lib/verticales';
+import { createProductLine, productLineSlugExists } from '../../../lib/productLines';
 import { isValidSlug } from '../../../lib/slug';
 
 export const prerender = false;
@@ -23,17 +23,17 @@ export const POST: APIRoute = async ({ request, redirect }) => {
 
   const slug = parsed.data.slug.trim();
   if (!isValidSlug(slug)) {
-    return redirect('/admin/verticales/nueva?error=slug-invalid', 303);
+    return redirect('/admin/product-lines/nueva?error=slug-invalid', 303);
   }
-  if (await verticalSlugExists(slug)) {
-    return redirect('/admin/verticales/nueva?error=slug-taken', 303);
+  if (await productLineSlugExists(slug)) {
+    return redirect('/admin/product-lines/nueva?error=slug-taken', 303);
   }
 
-  await createVertical({
+  await createProductLine({
     slug,
     nombre: parsed.data.nombre.trim(),
     orden: parsed.data.orden ?? 0,
   });
 
-  return redirect(`/admin/verticales/${slug}?saved=1`, 303);
+  return redirect(`/admin/product-lines/${slug}?saved=1`, 303);
 };

@@ -21,7 +21,7 @@ export type ColeccionOption = {
   nombre: string;
 };
 
-export type VerticalOption = {
+export type ProductLineOption = {
   slug: string;
   nombre: string;
   colores: Array<{
@@ -49,7 +49,7 @@ export type AdminProductInitial = {
   descripcionMd: string;
   disponible: boolean;
   colecciones: string[];
-  verticalSlug: string;
+  productLineSlug: string;
   colorCombinaciones: ColorCombinationDraft[];
   imagenes: ImageItem[];
 };
@@ -57,10 +57,10 @@ export type AdminProductInitial = {
 type Props = {
   initial: AdminProductInitial;
   allColecciones: ColeccionOption[];
-  allVerticales: VerticalOption[];
+  allProductLines: ProductLineOption[];
 };
 
-export default function AdminProductEdit({ initial, allColecciones, allVerticales }: Props) {
+export default function AdminProductEdit({ initial, allColecciones, allProductLines }: Props) {
   const [nombre, setNombre] = useState(initial.nombre);
   const [sku, setSku] = useState(initial.sku);
   const [precio, setPrecio] = useState(String(initial.precio));
@@ -69,7 +69,7 @@ export default function AdminProductEdit({ initial, allColecciones, allVerticale
   const [descripcionMd, setDescripcionMd] = useState(initial.descripcionMd);
   const [disponible, setDisponible] = useState(initial.disponible);
   const [colecciones, setColecciones] = useState<Set<string>>(new Set(initial.colecciones));
-  const [verticalSlug, setVerticalSlug] = useState(initial.verticalSlug);
+  const [productLineSlug, setProductLineSlug] = useState(initial.productLineSlug);
   const [colorCombinaciones, setColorCombinaciones] = useState<ColorCombinationDraft[]>(
     initial.colorCombinaciones,
   );
@@ -82,8 +82,8 @@ export default function AdminProductEdit({ initial, allColecciones, allVerticale
 
   const { toast, showSuccess, showError } = useToast();
 
-  const selectedVertical = allVerticales.find((v) => v.slug === verticalSlug);
-  const availableColors = selectedVertical?.colores.filter((color) => color.activo) ?? [];
+  const selectedProductLine = allProductLines.find((v) => v.slug === productLineSlug);
+  const availableColors = selectedProductLine?.colores.filter((color) => color.activo) ?? [];
 
   function toggleColeccion(slug: string) {
     setColecciones((prev) => {
@@ -106,7 +106,7 @@ export default function AdminProductEdit({ initial, allColecciones, allVerticale
         descripcionCorta,
         descripcionMd,
         colecciones: [...colecciones].join(','),
-        verticalSlug,
+        productLineSlug,
         colorCombinaciones: JSON.stringify(
           colorCombinaciones
             .map((combo, index) => ({
@@ -134,8 +134,8 @@ export default function AdminProductEdit({ initial, allColecciones, allVerticale
     }
   }
 
-  function onVerticalChange(nextSlug: string) {
-    setVerticalSlug(nextSlug);
+  function onProductLineChange(nextSlug: string) {
+    setProductLineSlug(nextSlug);
     setColorCombinaciones([]);
   }
 
@@ -386,14 +386,14 @@ export default function AdminProductEdit({ initial, allColecciones, allVerticale
         </div>
 
         <label class={styles.metaItem}>
-          <span class={styles.metaLabel}>Vertical</span>
+          <span class={styles.metaLabel}>Línea de producto</span>
           <select
             class={styles.textInput}
-            value={verticalSlug}
-            onChange={(e) => onVerticalChange((e.target as HTMLSelectElement).value)}
+            value={productLineSlug}
+            onChange={(e) => onProductLineChange((e.target as HTMLSelectElement).value)}
           >
-            <option value="">Sin vertical / sin colores</option>
-            {allVerticales.map((v) => (
+            <option value="">Sin línea de producto / sin colores</option>
+            {allProductLines.map((v) => (
               <option key={v.slug} value={v.slug}>{v.nombre}</option>
             ))}
           </select>
@@ -411,19 +411,19 @@ export default function AdminProductEdit({ initial, allColecciones, allVerticale
               type="button"
               class={styles.iconBtn}
               onClick={addColorCombination}
-              disabled={!selectedVertical || availableColors.length === 0}
+              disabled={!selectedProductLine || availableColors.length === 0}
             >
               + Agregar
             </button>
           </div>
 
-          {!selectedVertical ? (
+          {!selectedProductLine ? (
             <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-sm)' }}>
-              Selecciona una vertical para configurar colores.
+              Selecciona una línea de producto para configurar colores.
             </p>
           ) : availableColors.length === 0 ? (
             <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-sm)' }}>
-              Esta vertical no tiene colores activos todavía.
+              Esta línea de producto no tiene colores activos todavía.
             </p>
           ) : colorCombinaciones.length === 0 ? (
             <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-sm)' }}>

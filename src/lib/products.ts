@@ -1,5 +1,5 @@
 import { db } from './db';
-import type { VerticalColor } from './verticales';
+import type { ProductLineColor } from './productLines';
 
 export type ProductoImagen = {
   id: number;
@@ -13,7 +13,7 @@ export type ProductoColorCombinacion = {
   nombre: string;
   orden: number;
   activo: boolean;
-  colores: VerticalColor[];
+  colores: ProductLineColor[];
 };
 
 export type Producto = {
@@ -25,7 +25,7 @@ export type Producto = {
   disponible: boolean;
   orden: number;
   sku: string | null;
-  verticalSlug: string | null;
+  productLineSlug: string | null;
   createdAt: string;
   updatedAt: string;
   imagenes: ProductoImagen[];
@@ -56,7 +56,7 @@ export type CreateProductoInput = {
   orden?: number;
   sku?: string | null;
   colecciones?: string[];
-  verticalSlug?: string | null;
+  productLineSlug?: string | null;
   colorCombinaciones?: ProductoColorCombinacionInput[];
 };
 
@@ -69,7 +69,7 @@ export type UpdateProductoInput = {
   orden?: number;
   sku?: string | null;
   colecciones?: string[];
-  verticalSlug?: string | null;
+  productLineSlug?: string | null;
   colorCombinaciones?: ProductoColorCombinacionInput[];
 };
 
@@ -112,22 +112,22 @@ async function loadColorCombinaciones(slug: string): Promise<ProductoColorCombin
   const ids = combosRes.rows.map((r) => Number(r.id));
   const placeholders = ids.map(() => '?').join(',');
   const colorsRes = await db().execute({
-    sql: `SELECT pccc.combinacion_id, vc.id, vc.vertical_slug, vc.nombre, vc.hex, vc.orden,
+    sql: `SELECT pccc.combinacion_id, vc.id, vc.product_line_slug, vc.nombre, vc.hex, vc.orden,
                  vc.activo, vc.created_at, vc.updated_at, pccc.orden AS color_orden
           FROM product_color_combination_colors pccc
-          JOIN vertical_colors vc ON vc.id = pccc.color_id
+          JOIN product_line_colors vc ON vc.id = pccc.color_id
           WHERE pccc.combinacion_id IN (${placeholders})
           ORDER BY pccc.orden ASC, vc.orden ASC, vc.nombre ASC`,
     args: ids,
   });
 
-  const colorsByCombo = new Map<number, VerticalColor[]>();
+  const colorsByCombo = new Map<number, ProductLineColor[]>();
   for (const r of colorsRes.rows) {
     const comboId = Number(r.combinacion_id);
     const arr = colorsByCombo.get(comboId) ?? [];
     arr.push({
       id: Number(r.id),
-      verticalSlug: String(r.vertical_slug),
+      productLineSlug: String(r.product_line_slug),
       nombre: String(r.nombre),
       hex: r.hex ? String(r.hex) : null,
       orden: Number(r.orden),
@@ -164,22 +164,22 @@ async function loadColorCombinacionesForSlugs(slugs: string[]): Promise<Map<stri
   const ids = combosRes.rows.map((r) => Number(r.id));
   const colorPlaceholders = ids.map(() => '?').join(',');
   const colorsRes = await db().execute({
-    sql: `SELECT pccc.combinacion_id, vc.id, vc.vertical_slug, vc.nombre, vc.hex, vc.orden,
+    sql: `SELECT pccc.combinacion_id, vc.id, vc.product_line_slug, vc.nombre, vc.hex, vc.orden,
                  vc.activo, vc.created_at, vc.updated_at, pccc.orden AS color_orden
           FROM product_color_combination_colors pccc
-          JOIN vertical_colors vc ON vc.id = pccc.color_id
+          JOIN product_line_colors vc ON vc.id = pccc.color_id
           WHERE pccc.combinacion_id IN (${colorPlaceholders})
           ORDER BY pccc.orden ASC, vc.orden ASC, vc.nombre ASC`,
     args: ids,
   });
 
-  const colorsByCombo = new Map<number, VerticalColor[]>();
+  const colorsByCombo = new Map<number, ProductLineColor[]>();
   for (const r of colorsRes.rows) {
     const comboId = Number(r.combinacion_id);
     const arr = colorsByCombo.get(comboId) ?? [];
     arr.push({
       id: Number(r.id),
-      verticalSlug: String(r.vertical_slug),
+      productLineSlug: String(r.product_line_slug),
       nombre: String(r.nombre),
       hex: r.hex ? String(r.hex) : null,
       orden: Number(r.orden),
@@ -221,7 +221,7 @@ function rowToProducto(
     disponible: Number(r.disponible) === 1,
     orden: Number(r.orden),
     sku: r.sku ? String(r.sku) : null,
-    verticalSlug: r.vertical_slug ? String(r.vertical_slug) : null,
+    productLineSlug: r.product_line_slug ? String(r.product_line_slug) : null,
     createdAt: String(r.created_at),
     updatedAt: String(r.updated_at),
     imagenes,
@@ -233,7 +233,7 @@ function rowToProducto(
 export async function getProducto(slug: string): Promise<Producto | null> {
   const res = await db().execute({
     sql: `SELECT slug, nombre, precio, descripcion_corta, descripcion_md, disponible, orden, sku,
-                 vertical_slug,
+                 product_line_slug,
                  created_at, updated_at
           FROM products WHERE slug = ?`,
     args: [slug],
@@ -266,7 +266,7 @@ export async function listProductos(opts: ListProductosOptions = {}): Promise<Pr
 
   const res = await db().execute({
     sql: `SELECT p.slug, p.nombre, p.precio, p.descripcion_corta, p.descripcion_md,
-                 p.disponible, p.orden, p.sku, p.vertical_slug, p.created_at, p.updated_at
+                 p.disponible, p.orden, p.sku, p.product_line_slug, p.created_at, p.updated_at
           FROM products p
           ${whereSql}
           ORDER BY p.orden ASC, p.created_at DESC`,
@@ -320,22 +320,22 @@ export async function listProductos(opts: ListProductosOptions = {}): Promise<Pr
 }
 
 async function assertValidColorCombinaciones(
-  verticalSlug: string | null | undefined,
+  productLineSlug: string | null | undefined,
   colorCombinaciones: ProductoColorCombinacionInput[],
 ): Promise<void> {
   if (colorCombinaciones.length === 0) return;
-  if (!verticalSlug) throw new Error('color_combinations_require_vertical');
+  if (!productLineSlug) throw new Error('color_combinations_require_product_line');
 
   const colorsRes = await db().execute({
-    sql: `SELECT id FROM vertical_colors WHERE vertical_slug = ?`,
-    args: [verticalSlug],
+    sql: `SELECT id FROM product_line_colors WHERE product_line_slug = ?`,
+    args: [productLineSlug],
   });
   const allowed = new Set(colorsRes.rows.map((r) => Number(r.id)));
   for (const combo of colorCombinaciones) {
     const ids = combo.colorIds.filter((id) => Number.isInteger(id));
     if (ids.length < 1 || ids.length > 4) throw new Error('invalid_color_combination_size');
     for (const id of ids) {
-      if (!allowed.has(id)) throw new Error('invalid_color_for_vertical');
+      if (!allowed.has(id)) throw new Error('invalid_color_for_product_line');
     }
   }
 }
@@ -343,10 +343,10 @@ async function assertValidColorCombinaciones(
 async function replaceColorCombinaciones(
   tx: { execute: (stmt: { sql: string; args: unknown[] }) => Promise<{ lastInsertRowid?: bigint | number | null }> },
   slug: string,
-  verticalSlug: string | null | undefined,
+  productLineSlug: string | null | undefined,
   colorCombinaciones: ProductoColorCombinacionInput[],
 ): Promise<void> {
-  await assertValidColorCombinaciones(verticalSlug, colorCombinaciones);
+  await assertValidColorCombinaciones(productLineSlug, colorCombinaciones);
   const now = new Date().toISOString();
   await tx.execute({
     sql: `DELETE FROM product_color_combinations WHERE producto_slug = ?`,
@@ -391,7 +391,7 @@ export async function createProducto(input: CreateProductoInput): Promise<void> 
     await tx.execute({
       sql: `INSERT INTO products
             (slug, nombre, precio, descripcion_corta, descripcion_md,
-             disponible, orden, sku, vertical_slug, created_at, updated_at)
+             disponible, orden, sku, product_line_slug, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       args: [
         input.slug,
@@ -402,7 +402,7 @@ export async function createProducto(input: CreateProductoInput): Promise<void> 
         input.disponible === false ? 0 : 1,
         input.orden ?? 0,
         input.sku ?? null,
-        input.verticalSlug ?? null,
+        input.productLineSlug ?? null,
         now,
         now,
       ],
@@ -419,7 +419,7 @@ export async function createProducto(input: CreateProductoInput): Promise<void> 
       await replaceColorCombinaciones(
         tx,
         input.slug,
-        input.verticalSlug ?? null,
+        input.productLineSlug ?? null,
         input.colorCombinaciones,
       );
     }
@@ -443,7 +443,7 @@ export async function updateProducto(slug: string, input: UpdateProductoInput): 
   if (input.disponible !== undefined) { sets.push('disponible = ?'); args.push(input.disponible ? 1 : 0); }
   if (input.orden !== undefined) { sets.push('orden = ?'); args.push(input.orden); }
   if (input.sku !== undefined) { sets.push('sku = ?'); args.push(input.sku); }
-  if (input.verticalSlug !== undefined) { sets.push('vertical_slug = ?'); args.push(input.verticalSlug); }
+  if (input.productLineSlug !== undefined) { sets.push('product_line_slug = ?'); args.push(input.productLineSlug); }
 
   const tx = await db().transaction('write');
   try {
@@ -471,10 +471,10 @@ export async function updateProducto(slug: string, input: UpdateProductoInput): 
     }
 
     if (input.colorCombinaciones !== undefined) {
-      const verticalSlug = input.verticalSlug !== undefined
-        ? input.verticalSlug
-        : (await getProducto(slug))?.verticalSlug ?? null;
-      await replaceColorCombinaciones(tx, slug, verticalSlug, input.colorCombinaciones);
+      const productLineSlug = input.productLineSlug !== undefined
+        ? input.productLineSlug
+        : (await getProducto(slug))?.productLineSlug ?? null;
+      await replaceColorCombinaciones(tx, slug, productLineSlug, input.colorCombinaciones);
     }
 
     await tx.commit();
