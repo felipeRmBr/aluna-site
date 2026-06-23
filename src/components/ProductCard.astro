@@ -2,6 +2,7 @@
 import styles from './ProductCard.module.css';
 import { formatMXN } from '../lib/money';
 import { img } from '../lib/img';
+import type { ProductoColorCombinacion } from '../lib/products';
 
 type Props = {
   slug: string;
@@ -9,11 +10,17 @@ type Props = {
   precio: number;
   imagen: string | null | undefined;
   disponible?: boolean;
-  hasColorCombinations?: boolean;
+  colorCombinaciones?: ProductoColorCombinacion[];
 };
 
-const { slug, nombre, precio, imagen, disponible = true, hasColorCombinations = false } = Astro.props;
+const { slug, nombre, precio, imagen, disponible = true, colorCombinaciones = [] } = Astro.props;
 const src = imagen ? img(imagen, { w: 600, fit: 'cover', fm: 'webp', q: 80 }) : null;
+
+// Combinations the customer can actually pick (same availability rule as the product page).
+const selectable = colorCombinaciones.filter(
+  (combo) => combo.activo && combo.colores.every((color) => color.activo),
+);
+const hasColorCombinations = selectable.length > 0;
 ---
 <article class={styles.card}>
   <a class={styles.mediaLink} href={`/productos/${slug}`}>
@@ -25,6 +32,21 @@ const src = imagen ? img(imagen, { w: 600, fit: 'cover', fm: 'webp', q: 80 }) : 
   <div class={styles.body}>
     <a class={styles.name} href={`/productos/${slug}`}>{nombre}</a>
     <span class={styles.price}>{formatMXN(precio)}</span>
+    {selectable.length > 0 && (
+      <ul class={styles.colors} aria-label="Colores disponibles">
+        {selectable.map((combo) => (
+          <li class={styles.swatch} title={combo.nombre}>
+            {combo.colores.map((color) => (
+              <span
+                class={styles.slice}
+                style={color.hex ? `background: ${color.hex}` : undefined}
+              />
+            ))}
+            <span class={styles.srOnly}>{combo.nombre}</span>
+          </li>
+        ))}
+      </ul>
+    )}
     {hasColorCombinations ? (
       <a class={styles.addBtn} href={`/productos/${slug}`}>Elegir color</a>
     ) : (

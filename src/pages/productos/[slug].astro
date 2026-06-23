@@ -35,6 +35,8 @@ const allProductos = await listProductos();
 const activeColorCombinaciones = producto.colorCombinaciones.filter(
   (combo) => combo.activo && combo.colores.every((color) => color.activo),
 );
+// Preselect the first available color so the customer can add to cart without an extra click.
+const defaultCombo = activeColorCombinaciones[0] ?? null;
 const otrosProductos = (() => {
   const others = allProductos.filter((p) => p.slug !== producto.slug);
   const sameCollection = others.filter((p) =>
@@ -76,30 +78,33 @@ const otrosProductos = (() => {
 
       {activeColorCombinaciones.length > 0 && (
         <fieldset class={styles.colorPicker}>
-          <legend class={styles.colorLegend}>Color</legend>
+          <legend class={styles.colorLegend}>
+            Color
+            <span class={styles.colorSelected} data-color-selected-name aria-live="polite">
+              {defaultCombo?.nombre}
+            </span>
+          </legend>
           <div class={styles.colorOptions}>
             {activeColorCombinaciones.map((combo) => (
-              <label class={styles.colorOption}>
+              <label class={styles.colorOption} title={combo.nombre}>
                 <input
                   type="radio"
                   name="color-combination"
                   value={combo.id}
+                  aria-label={combo.nombre}
+                  checked={combo.id === defaultCombo?.id}
                   data-color-combination-option
                   data-color-combination-name={combo.nombre}
                 />
-                <span>
-                  <span class={styles.colorSwatches}>
-                    {combo.colores.map((color) => (
-                      <span
-                        class={styles.colorSwatch}
-                        style={color.hex ? `background: ${color.hex}` : undefined}
-                        title={color.nombre}
-                      >
-                        {!color.hex && color.nombre.slice(0, 1)}
-                      </span>
-                    ))}
-                  </span>
-                  <span>{combo.nombre}</span>
+                <span class={styles.colorSwatch}>
+                  {combo.colores.map((color) => (
+                    <span
+                      class={styles.colorSlice}
+                      style={color.hex ? `background: ${color.hex}` : undefined}
+                    >
+                      {!color.hex && combo.colores.length === 1 && combo.nombre.slice(0, 1)}
+                    </span>
+                  ))}
                 </span>
               </label>
             ))}
@@ -120,7 +125,9 @@ const otrosProductos = (() => {
         data-nombre={producto.nombre}
         data-precio={producto.precio}
         data-imagen={producto.imagenes[0]?.url ?? ''}
-        disabled={!producto.disponible || activeColorCombinaciones.length > 0}
+        data-color-combination-id={defaultCombo ? String(defaultCombo.id) : undefined}
+        data-color-combination-nombre={defaultCombo?.nombre}
+        disabled={!producto.disponible}
       >
         {producto.disponible ? 'Añadir al carrito' : 'Agotado'}
       </button>
@@ -143,7 +150,7 @@ const otrosProductos = (() => {
               precio={p.precio}
               imagen={p.imagenes[0]?.url ?? null}
               disponible={p.disponible}
-              hasColorCombinations={p.colorCombinaciones.some((combo) => combo.activo)}
+              colorCombinaciones={p.colorCombinaciones}
             />
           ))}
         </div>
@@ -154,14 +161,17 @@ const otrosProductos = (() => {
 <script>
   const addBtn = document.querySelector<HTMLButtonElement>('[data-add-to-cart]');
   const colorMessage = document.querySelector<HTMLElement>('[data-color-required-message]');
+  const selectedName = document.querySelector<HTMLElement>('[data-color-selected-name]');
 
   document.querySelectorAll<HTMLInputElement>('[data-color-combination-option]').forEach((input) => {
     input.addEventListener('change', () => {
       if (!addBtn || !input.checked) return;
+      const nombre = input.dataset.colorCombinationName ?? '';
       addBtn.dataset.colorCombinationId = input.value;
-      addBtn.dataset.colorCombinationNombre = input.dataset.colorCombinationName ?? '';
+      addBtn.dataset.colorCombinationNombre = nombre;
       addBtn.disabled = addBtn.dataset.available !== 'true';
       if (colorMessage) colorMessage.hidden = true;
+      if (selectedName) selectedName.textContent = nombre;
     });
   });
 </script>
