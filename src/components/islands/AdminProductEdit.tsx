@@ -39,6 +39,9 @@ type ColorCombinationDraft = {
   activo: boolean;
 };
 
+type ComboKind = 'single' | 'multi';
+type Draft = ColorCombinationDraft & { kind: ComboKind };
+
 export type AdminProductInitial = {
   slug: string;
   nombre: string;
@@ -70,8 +73,11 @@ export default function AdminProductEdit({ initial, allColecciones, allProductLi
   const [disponible, setDisponible] = useState(initial.disponible);
   const [colecciones, setColecciones] = useState<Set<string>>(new Set(initial.colecciones));
   const [productLineSlug, setProductLineSlug] = useState(initial.productLineSlug);
-  const [colorCombinaciones, setColorCombinaciones] = useState<ColorCombinationDraft[]>(
-    initial.colorCombinaciones,
+  const [colorCombinaciones, setColorCombinaciones] = useState<Draft[]>(
+    initial.colorCombinaciones.map((c) => ({
+      ...c,
+      kind: c.colorIds.length > 1 ? 'multi' : 'single',
+    })),
   );
 
   const [images, setImages] = useState<ImageItem[]>(initial.imagenes);
@@ -84,6 +90,13 @@ export default function AdminProductEdit({ initial, allColecciones, allProductLi
 
   const selectedProductLine = allProductLines.find((v) => v.slug === productLineSlug);
   const availableColors = selectedProductLine?.colores.filter((color) => color.activo) ?? [];
+  const colorById = new Map(availableColors.map((c) => [c.id, c] as const));
+  const singleColorIds = new Set(
+    colorCombinaciones.filter((c) => c.kind === 'single').map((c) => c.colorIds[0]),
+  );
+  const multiCombos = colorCombinaciones
+    .map((combo, index) => ({ combo, index }))
+    .filter((x) => x.combo.kind === 'multi');
 
   function toggleColeccion(slug: string) {
     setColecciones((prev) => {
@@ -109,12 +122,16 @@ export default function AdminProductEdit({ initial, allColecciones, allProductLi
         productLineSlug,
         colorCombinaciones: JSON.stringify(
           colorCombinaciones
-            .map((combo, index) => ({
-              nombre: combo.nombre.trim(),
-              orden: combo.orden || index,
-              activo: combo.activo,
-              colorIds: combo.colorIds.filter(Boolean).slice(0, 4),
-            }))
+            .map((combo, index) => {
+              const colorIds = combo.colorIds.filter(Boolean).slice(0, 4);
+              const nombre =
+                combo.nombre.trim() ||
+                colorIds
+                  .map((id) => colorById.get(id)?.nombre)
+                  .filter(Boolean)
+                  .join(' + ');
+              return { nombre, orden: index, activo: combo.activo, colorIds };
+            })
             .filter((combo) => combo.nombre && combo.colorIds.length > 0),
         ),
       });
@@ -139,19 +156,40 @@ export default function AdminProductEdit({ initial, allColecciones, allProductLi
     setColorCombinaciones([]);
   }
 
+  function toggleIndividualColor(colorId: number) {
+    setColorCombinaciones((prev) => {
+      const exists = prev.some((c) => c.kind === 'single' && c.colorIds[0] === colorId);
+      if (exists) {
+        return prev.filter((c) => !(c.kind === 'single' && c.colorIds[0] === colorId));
+      }
+      const color = colorById.get(colorId);
+      return [
+        ...prev,
+        {
+          nombre: color?.nombre ?? '',
+          colorIds: [colorId],
+          orden: prev.length,
+          activo: true,
+          kind: 'single',
+        },
+      ];
+    });
+  }
+
   function addColorCombination() {
     setColorCombinaciones((prev) => [
       ...prev,
       {
         nombre: '',
-        colorIds: availableColors[0] ? [availableColors[0].id] : [],
+        colorIds: [],
         orden: prev.length,
         activo: true,
+        kind: 'multi',
       },
     ]);
   }
 
-  function updateColorCombination(index: number, patch: Partial<ColorCombinationDraft>) {
+  function updateColorCombination(index: number, patch: Partial<Draft>) {
     setColorCombinaciones((prev) =>
       prev.map((combo, i) => (i === index ? { ...combo, ...patch } : combo)),
     );
@@ -400,21 +438,11 @@ export default function AdminProductEdit({ initial, allColecciones, allProductLi
         </label>
 
         <div class={styles.sectionBox}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 'var(--s-3)', alignItems: 'center' }}>
-            <div>
-              <span class={styles.sectionTitleSm}>Combinaciones de color</span>
-              <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-sm)', marginTop: 'var(--s-1)' }}>
-                Define las opciones exactas que el cliente podrá elegir. Cada opción acepta hasta 4 colores.
-              </p>
-            </div>
-            <button
-              type="button"
-              class={styles.iconBtn}
-              onClick={addColorCombination}
-              disabled={!selectedProductLine || availableColors.length === 0}
-            >
-              + Agregar
-            </button>
+          <div>
+            <span class={styles.sectionTitleSm}>Colores disponibles</span>
+            <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-sm)', marginTop: 'var(--s-1)' }}>
+              Activa los colores individuales que el cliente podrá elegir. Cada color marcado se vende por separado.
+            </p>
           </div>
 
           {!selectedProductLine ? (
@@ -425,24 +453,79 @@ export default function AdminProductEdit({ initial, allColecciones, allProductLi
             <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-sm)' }}>
               Esta línea de producto no tiene colores activos todavía.
             </p>
-          ) : colorCombinaciones.length === 0 ? (
-            <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-sm)' }}>
-              Sin combinaciones. El producto se venderá sin selección de color.
-            </p>
           ) : (
-            <div style={{ display: 'grid', gap: 'var(--s-4)', marginTop: 'var(--s-4)' }}>
-              {colorCombinaciones.map((combo, index) => (
-                <div
-                  key={index}
-                  style={{
-                    border: '1px solid var(--line)',
-                    borderRadius: 'var(--r-md)',
-                    padding: 'var(--s-4)',
-                    display: 'grid',
-                    gap: 'var(--s-3)',
-                  }}
-                >
-                  <div class={styles.fieldRow}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--s-2)', marginTop: 'var(--s-3)' }}>
+              {availableColors.map((color) => {
+                const on = singleColorIds.has(color.id);
+                return (
+                  <button
+                    key={color.id}
+                    type="button"
+                    onClick={() => toggleIndividualColor(color.id)}
+                    aria-pressed={on}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 'var(--s-2)',
+                      padding: 'var(--s-2) var(--s-3)',
+                      borderRadius: 'var(--r-pill, 999px)',
+                      border: on ? '1.5px solid var(--text)' : '1px solid var(--line)',
+                      background: on ? 'var(--surface-2, rgba(0,0,0,0.04))' : 'transparent',
+                      color: 'var(--text)',
+                      fontWeight: on ? 600 : 400,
+                      fontSize: 'var(--fs-sm)',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: '14px',
+                        height: '14px',
+                        borderRadius: '50%',
+                        background: color.hex ?? 'transparent',
+                        border: '1px solid var(--line)',
+                        flexShrink: 0,
+                      }}
+                    />
+                    {color.nombre}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {selectedProductLine && availableColors.length > 0 && (
+          <div class={styles.sectionBox}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 'var(--s-3)', alignItems: 'center' }}>
+              <div>
+                <span class={styles.sectionTitleSm}>Combinaciones de varios colores</span>
+                <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-sm)', marginTop: 'var(--s-1)' }}>
+                  Opcional. Crea opciones que mezclan 2 o más colores (hasta 4). El nombre se genera solo si lo dejas vacío.
+                </p>
+              </div>
+              <button type="button" class={styles.iconBtn} onClick={addColorCombination}>
+                + Agregar
+              </button>
+            </div>
+
+            {multiCombos.length === 0 ? (
+              <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-sm)' }}>
+                Sin combinaciones de varios colores.
+              </p>
+            ) : (
+              <div style={{ display: 'grid', gap: 'var(--s-4)', marginTop: 'var(--s-4)' }}>
+                {multiCombos.map(({ combo, index }) => (
+                  <div
+                    key={index}
+                    style={{
+                      border: '1px solid var(--line)',
+                      borderRadius: 'var(--r-md)',
+                      padding: 'var(--s-4)',
+                      display: 'grid',
+                      gap: 'var(--s-3)',
+                    }}
+                  >
                     <label class={styles.metaItem}>
                       <span class={styles.metaLabel}>Nombre de combinación</span>
                       <input
@@ -456,62 +539,50 @@ export default function AdminProductEdit({ initial, allColecciones, allProductLi
                         placeholder="Blanco + Negro"
                       />
                     </label>
-                    <label class={styles.metaItem}>
-                      <span class={styles.metaLabel}>Orden</span>
-                      <input
-                        class={styles.textInput}
-                        type="number"
-                        step={1}
-                        value={combo.orden}
-                        onInput={(e) => updateColorCombination(index, {
-                          orden: Number((e.target as HTMLInputElement).value),
-                        })}
-                      />
-                    </label>
-                  </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 'var(--s-3)' }}>
-                    {[0, 1, 2, 3].map((colorIndex) => (
-                      <label class={styles.metaItem} key={colorIndex}>
-                        <span class={styles.metaLabel}>Color {colorIndex + 1}</span>
-                        <select
-                          class={styles.textInput}
-                          value={combo.colorIds[colorIndex] ?? ''}
-                          onChange={(e) => setComboColor(index, colorIndex, (e.target as HTMLSelectElement).value)}
-                        >
-                          <option value="">{colorIndex === 0 ? 'Elige un color' : 'Sin color'}</option>
-                          {availableColors.map((color) => (
-                            <option key={color.id} value={color.id}>{color.nombre}</option>
-                          ))}
-                        </select>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 'var(--s-3)' }}>
+                      {[0, 1, 2, 3].map((colorIndex) => (
+                        <label class={styles.metaItem} key={colorIndex}>
+                          <span class={styles.metaLabel}>Color {colorIndex + 1}</span>
+                          <select
+                            class={styles.textInput}
+                            value={combo.colorIds[colorIndex] ?? ''}
+                            onChange={(e) => setComboColor(index, colorIndex, (e.target as HTMLSelectElement).value)}
+                          >
+                            <option value="">{colorIndex === 0 ? 'Elige un color' : 'Sin color'}</option>
+                            {availableColors.map((color) => (
+                              <option key={color.id} value={color.id}>{color.nombre}</option>
+                            ))}
+                          </select>
+                        </label>
+                      ))}
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 'var(--s-3)', alignItems: 'center' }}>
+                      <label class={styles.checkboxField}>
+                        <input
+                          type="checkbox"
+                          checked={combo.activo}
+                          onChange={(e) => updateColorCombination(index, {
+                            activo: (e.target as HTMLInputElement).checked,
+                          })}
+                        />
+                        <span>Disponible para compra</span>
                       </label>
-                    ))}
+                      <button
+                        type="button"
+                        class={`${styles.iconBtn} ${styles.iconBtnDanger}`}
+                        onClick={() => removeColorCombination(index)}
+                      >
+                        Quitar
+                      </button>
+                    </div>
                   </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 'var(--s-3)', alignItems: 'center' }}>
-                    <label class={styles.checkboxField}>
-                      <input
-                        type="checkbox"
-                        checked={combo.activo}
-                        onChange={(e) => updateColorCombination(index, {
-                          activo: (e.target as HTMLInputElement).checked,
-                        })}
-                      />
-                      <span>Disponible para compra</span>
-                    </label>
-                    <button
-                      type="button"
-                      class={`${styles.iconBtn} ${styles.iconBtnDanger}`}
-                      onClick={() => removeColorCombination(index)}
-                    >
-                      Quitar
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         <fieldset class={styles.metaItem} style={{ border: 0, padding: 0, margin: 0 }}>
           <legend class={styles.metaLabel}>Colecciones</legend>
