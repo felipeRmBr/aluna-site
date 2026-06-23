@@ -29,7 +29,12 @@ const galleryImages = producto.imagenes.map((img, i) => ({
 }));
 
 const allProductos = await listProductos();
-const activeColorCombinaciones = producto.colorCombinaciones.filter((combo) => combo.activo);
+// A combination is shown only if it's active and every color in it is still available
+// at the product-line level. Disabling a color on its product line hides it (and any
+// combination that includes it) from the customer everywhere.
+const activeColorCombinaciones = producto.colorCombinaciones.filter(
+  (combo) => combo.activo && combo.colores.every((color) => color.activo),
+);
 const otrosProductos = (() => {
   const others = allProductos.filter((p) => p.slug !== producto.slug);
   const sameCollection = others.filter((p) =>
